@@ -77,7 +77,7 @@ def training_loop(
                 train_dict.keys(), train_vars)}
             duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
-            train_accs[step] = it_train_dict['train_accuracy']
+            train_accs[step] = it_train_dict['train_accuracy_0']
             timesteps[step] = duration
             if train_aux_check:
                 # Loop through to find aux scores
@@ -100,7 +100,7 @@ def training_loop(
                         val_dict.keys(), val_vars)}
                     it_val_acc = np.append(
                         it_val_acc,
-                        it_val_dict['val_accuracy'])
+                        it_val_dict['val_accuracy_0'])
                     it_val_loss = np.append(
                         it_val_loss,
                         it_val_dict['val_loss'])
@@ -135,7 +135,7 @@ def training_loop(
                     it_train_dict['train_loss'],
                     config.batch_size / duration,
                     float(duration),
-                    it_train_dict['train_accuracy'],
+                    it_train_dict['train_accuracy_0'],
                     val_acc,
                     summary_dir)
 
@@ -192,7 +192,7 @@ def training_loop(
                     it_train_dict['train_loss'],
                     config.batch_size / duration,
                     float(duration),
-                    it_train_dict['train_accuracy'])
+                    it_train_dict['train_accuracy_0'])
 
             # End iteration
             step += 1

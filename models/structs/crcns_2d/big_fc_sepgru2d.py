@@ -2,8 +2,10 @@
 
 layer_structure = [
     {
-        'layers': ['sepgru2d'],
-        'weights': [24],
+        'layers': ['alexnet_sepgru2d'],
+        'weights': [96],
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',
+        'alexnet_layer': 'conv1',
         'filter_size': [7],
         'names': ['sepgru2d1'],
         'activation': ['selu'],

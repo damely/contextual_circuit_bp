@@ -10,6 +10,12 @@ layer_structure = [
         'activation_target': ['post'],
     },
     {
+        'layers': ['pool'],
+        'weights': [None],
+        'names': ['pool2'],
+        'filter_size': [None]
+    },
+    {
         'layers': ['conv'],
         'weights': [24],
         'filter_size': [3],
@@ -23,8 +29,8 @@ output_structure = [
     {
         'flatten': [True],
         'flatten_target': ['pre'],
-        'layers': ['fc'],
-        'weights': [2],
+        'layers': ['multi_fc'],
+        'weights': [[2, 3]],
         'names': ['fc3'],
     }
 ]

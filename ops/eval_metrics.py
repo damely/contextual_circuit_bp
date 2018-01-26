@@ -3,78 +3,82 @@ import tensorflow as tf
 
 def metric_interpreter(metric, pred, labels):
     """Interpret string as a metric."""
-    scores = []
-    if not isinstance(pred, list):
-        preds = [pred]
-    else:
-        preds = pred
-    for pred in preds:
-        if metric == 'accuracy':
-            scores += [class_accuracy(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'argmax_softmax_accuracy':
-            final_dim = len(pred.get_shape()) - 1
-            proc_pred = tf.cast(
-                tf.argmax(tf.nn.softmax(pred, dim=-1), axis=final_dim),
-                tf.float32)
-            labels = tf.cast(labels, tf.float32)
-            scores += [tf.reduce_mean(
-                tf.cast(
-                    tf.equal(
-                        proc_pred, labels), tf.float32))]
-        elif metric == 'mean':
-            scores += [mean_score(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'l2':
-            scores += [l2_score(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'pearson':
-            scores += [pearson_summary_score(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'pearson_columnwise':
-            scores += [pearson_summary_score(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'l2_columnwise':
-            scores += [l2_columnwise(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'sigmoid_pearson':
-            scores += [pearson_summary_score(
-                pred=tf.round(tf.nn.sigmoid(pred)),
-                labels=labels)]
-        elif metric == 'round_pearson':
-            scores += [pearson_summary_score(
-                pred=tf.squeeze(tf.round(pred)),
-                labels=tf.squeeze(labels))]
-        elif metric == 'sigmoid_accuracy':
-            scores += [sigmoid_accuracy(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'f1':
-            scores += [f1(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'precision':
-            scores += [precision(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'recall':
-            scores += [recall(
-                pred=pred,
-                labels=labels)]
-        elif metric == 'auc':
-            scores += [auc(
-                pred=pred,
-                labels=labels)]
-        else:
-            raise RuntimeError(
-                'Cannot understand the dataset metric.')
+    if isinstance(pred, list):
+        scores = []
+        for idx, pd in enumerate(pred):
+            label = labels[:, idx]
+            if metric == 'accuracy':
+                scores += [class_accuracy(
+                    pred=pd,
+                    labels=label)]
+            elif metric == 'argmax_softmax_accuracy':
+                final_dim = len(pd.get_shape()) - 1
+                proc_pred = tf.cast(
+                    tf.argmax(tf.nn.softmax(pd, dim=-1), axis=final_dim),
+                    tf.float32)
+                label = tf.cast(label, tf.float32)
+                scores += [tf.reduce_mean(
+                    tf.cast(
+                        tf.equal(
+                            proc_pred, label), tf.float32))]
+            else:
+                raise NotImplementedError
         return scores
+    else:
+        if metric == 'accuracy':
+            return class_accuracy(
+                pred=pred,
+                labels=labels)
+        elif metric == 'mean':
+            return mean_score(
+                pred=pred,
+                labels=labels)
+        elif metric == 'l2':
+            return l2_score(
+                pred=pred,
+                labels=labels)
+        elif metric == 'pearson':
+            return pearson_summary_score(
+                pred=pred,
+                labels=labels)
+        elif metric == 'pearson_columnwise':
+            return pearson_summary_score(
+                pred=pred,
+                labels=labels)
+        elif metric == 'l2_columnwise':
+            return l2_columnwise(
+                pred=pred,
+                labels=labels)
+        elif metric == 'sigmoid_pearson':
+            return pearson_summary_score(
+                pred=tf.nn.sigmoid(pred),
+                labels=labels)
+        elif metric == 'round_pearson':
+            return pearson_summary_score(
+                pred=tf.squeeze(tf.round(pred)),
+                labels=tf.squeeze(labels))
+        elif metric == 'sigmoid_accuracy':
+            return sigmoid_accuracy(
+                pred=pred,
+                labels=labels)
+        elif metric == 'f1':
+            return f1(
+                pred=pred,
+                labels=labels)
+        elif metric == 'precision':
+            return precision(
+                pred=pred,
+                labels=labels)
+        elif metric == 'recall':
+            return recall(
+                pred=pred,
+                labels=labels)
+        elif metric == 'auc':
+            return auc(
+                pred=pred,
+                labels=labels)
+        else:
+            raise RuntimeError('Cannot understand the dataset metric.')
 
 
 def tabulate_confusion_metrics(pred, labels, force_dtype=tf.float32):

@@ -195,8 +195,17 @@ def image_augmentations(
             image = resize_image_label(
                 im=image,
                 model_input_image_size=model_input_image_size,
-                f='bilinear')
-            print 'Applying bilinear resize.'
+                f='area')
+            print 'Applying area resize.'
+        if 'resize_and_crop' in data_augmentations and im_size_check:
+            model_input_image_size_1 = np.asarray(
+                model_input_image_size[:2]) + 28
+            image = resize_image_label(
+                im=image,
+                model_input_image_size=model_input_image_size_1,
+                f='area')
+            image = center_crop(image, model_input_image_size)
+            print 'Applying area resize.'
         if 'rotate' in data_augmentations and im_size_check:
             raise NotImplementedError
         if 'resize_nn' in data_augmentations and im_size_check:

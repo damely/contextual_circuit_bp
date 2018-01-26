@@ -112,14 +112,14 @@ class model_class(object):
         # Correct output neurons if needed
         if 'weights' in output_structure[-1].keys():
             pass
-            output_neurons = output_structure[-1]['weights'][0]
-            size_check = output_neurons != self.output_size
-            fc_check = output_structure[-1]['layers'][0] == 'fc'
-            if size_check and fc_check:
-                # output_structure[-1]['weights'][0] = self.output_size  # KILL
-                log.warning('Adjusted output neurons from %s to %s.' % (
-                    output_neurons,
-                    self.output_size))
+            # output_neurons = output_structure[-1]['weights'][0]
+            # size_check = output_neurons != self.output_size
+            # fc_check = output_structure[-1]['layers'][0] == 'fc'
+            # if size_check and fc_check:
+            #     # output_structure[-1]['weights'][0] = self.output_size  # KILL
+            #     log.warning('Adjusted output neurons from %s to %s.' % (
+            #         output_neurons,
+            #         self.output_size))
 
         # Calculate output effective receptive fields
         if tower_eRFs is not None:
@@ -141,7 +141,10 @@ class model_class(object):
             tower_name='output',
             eRFs=output_eRFs,
             layer_summary=layer_summary)
-        self.output = tf.identity(output, name='output')
+        if isinstance(output, list):
+            self.output = output
+        else:
+            self.output = tf.identity(output, name='output')
         self.data_dict = None
         return output, layer_summary
 
@@ -199,9 +202,9 @@ def update_summary(layer_summary, op_name):
 
 def flatten_op(self, it_dict, act, layer_summary, eRFs, target):
     """Wrapper for a flatten operation in a graph."""
-    tshape = [int(x) for x in act.get_shape()]
     if 'flatten_target' in it_dict.keys() and \
             it_dict['flatten_target'][0] == target:
+        tshape = [int(x) for x in act.get_shape()]
         rows = tshape[0]
         cols = np.prod(tshape[1:])
         act = tf.reshape(act, [rows, cols])
@@ -286,7 +289,7 @@ def norm_op(self, it_dict, act, layer_summary, norm_mod, eRFs, target):
 
 
 def ff_op(self, it_dict, act, layer_summary, ff_mod):
-    """Wrapper for a normalization operation in a graph."""
+    """Wrapper for a FF operation in a graph."""
     fla = it_dict.get('layers', [None])
     fns = it_dict.get('names', [None])
     fws = it_dict.get('weights', [None])

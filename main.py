@@ -184,7 +184,7 @@ def main(
             data_augmentations=config.data_augmentations,
             num_epochs=config.epochs,
             tf_reader_settings=dataset_module.tf_reader,
-            shuffle=config.shuffle,
+            shuffle=config.shuffle_train,
             resize_output=config.resize_output)
         if hasattr(config, 'val_augmentations'):
             val_augmentations = config.val_augmentations
@@ -198,7 +198,7 @@ def main(
             data_augmentations=val_augmentations,
             num_epochs=config.epochs,
             tf_reader_settings=dataset_module.tf_reader,
-            shuffle=config.shuffle,
+            shuffle=config.shuffle_val,
             resize_output=config.resize_output)
     log.info('Created tfrecord dataloader tensors.')
 
@@ -288,6 +288,14 @@ def main(
                 weights=config.loss_weights,
                 dataset_module=dataset_module)
 
+            # Add loss tensorboard tracking
+            if isinstance(train_loss, list):
+                for lidx, tl in enumerate(train_loss):
+                    tf.summary.scalar('training_loss_%s' % lidx, tl)
+                train_loss = tf.add_n(train_loss)
+            else:
+                tf.summary.scalar('training_loss', train_loss)
+
             # Add weight decay if requested
             if len(model.regularizations) > 0:
                 train_loss = loss_utils.wd_loss(
@@ -317,7 +325,7 @@ def main(
                         pred=train_scores,
                         labels=train_labels)[0]  # TODO: Fix for multiloss
 
-            # Prepare tensorboard summaries
+            # Prepare remaining tensorboard summaries
             if len(train_images.get_shape()) == 4:
                 tf_fun.image_summaries(train_images, tag='Training images')
             if len(train_labels.get_shape()) > 2:
@@ -327,9 +335,11 @@ def main(
                 tf_fun.image_summaries(
                     train_scores,
                     tag='Training_predictions')
-            tf.summary.scalar('training_loss', train_loss)
-            for tidx, ta in enumerate(train_accuracy):
-                tf.summary.scalar('training_accuracy_%s' % tidx, ta)
+            if isinstance(train_accuracy, list):
+                for tidx, ta in enumerate(train_accuracy):
+                    tf.summary.scalar('training_accuracy_%s' % tidx, ta)
+            else:
+                tf.summary.scalar('training_accuracy', train_accuracy)
             log.info('Added training summaries.')
 
             # Validation model
@@ -366,6 +376,14 @@ def main(
                 weights=config.loss_weights,
                 dataset_module=dataset_module)
 
+            # Add loss tensorboard tracking
+            if isinstance(val_loss, list):
+                for lidx, tl in enumerate(val_loss):
+                    tf.summary.scalar('validation_loss_%s' % lidx, tl)
+                val_loss = tf.add_n(val_loss)
+            else:
+                tf.summary.scalar('validation_loss', val_loss)
+
             # Add a score for the validation set
             val_accuracy = eval_metrics.metric_interpreter(
                 metric=dataset_module.score_metric,  # TODO
@@ -391,9 +409,11 @@ def main(
                 tf_fun.image_summaries(
                     val_scores,
                     tag='Validation_predictions')
-            tf.summary.scalar('validation_loss', val_loss)
-            for vidx, va in enumerate(val_accuracy):
-                tf.summary.scalar('validation_accuracy_%s' % vidx, va)
+            if isinstance(val_accuracy, list):
+                for vidx, va in enumerate(val_accuracy):
+                    tf.summary.scalar('validation_accuracy_%s' % vidx, va)
+            else:
+                tf.summary.scalar('validation_accuracy', val_accuracy)
             log.info('Added validation summaries.')
 
     # Set up summaries and saver
@@ -429,9 +449,13 @@ def main(
         'val_labels': val_labels,
         'val_scores': val_scores,
     }
-    for tidx, (ta, va) in enumerate(zip(train_accuracy, val_accuracy)):
-        train_dict['train_accuracy_%s' % tidx] = ta
-        val_dict['val_accuracy_%s' % tidx] = va
+    if isinstance(train_accuracy, list):
+        for tidx, (ta, va) in enumerate(zip(train_accuracy, val_accuracy)):
+            train_dict['train_accuracy_%s' % tidx] = ta
+            val_dict['val_accuracy_%s' % tidx] = va
+    else:
+        train_dict['train_accuracy_0'] = train_accuracy
+        val_dict['val_accuracy_0'] = val_accuracy
 
     if load_and_evaluate_ckpt is not None:
         # Remove the train operation and add a ckpt pointer

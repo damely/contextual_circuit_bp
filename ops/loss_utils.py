@@ -65,25 +65,27 @@ def loss_interpreter(
         # TODO use a similar approach as eval_metrics
         loss_types = loss_type.split('@')
         split_labels = tf.split(labels, len(loss_types), axis=-1)
-        loss_list = []
-        for idx, (loss_type, logit) in enumerate(zip(loss_types, logits)):
+        loss_list, score_list = [], []
+        for idx, loss_type in enumerate(loss_types):
             if loss_type == 'cce':
-                logit = tf.cast(logit, tf.float32)
-                labels = tf.squeeze(tf.cast(labels, tf.int64))
-                loss_list += [cce(
+                logit = tf.cast(logits[idx], tf.float32)
+                label = tf.squeeze(tf.cast(split_labels[idx], tf.int64))
+                it_loss, it_score = cce(
                     logits=logit,
-                    labels=split_labels[idx],
-                    weights=weights)]
+                    labels=label,
+                    weights=weights)
             elif loss_type == 'tf_log_poisson':
                 logit = tf.cast(logit, tf.float32)
                 labels = tf.cast(labels, tf.float32)
-                loss_list += [tf_log_poisson(
+                it_loss, it_score = tf_log_poisson(
                     logits=logit,
                     labels=split_labels[idx],
-                    weights=weights)]
+                    weights=weights)
             else:
                 raise NotImplementedError
-        return tf.add_n(loss_list)
+            loss_list += [it_loss]
+            score_list += [it_score]
+        return loss_list, score_list
 
     if loss_type == 'cce':
         logits = tf.cast(logits, tf.float32)

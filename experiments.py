@@ -24,7 +24,8 @@ class experiments():
                 ]
             ],  # TODO: document all data augmentations.
             'epochs': 200,
-            'shuffle': True,  # Shuffle data.
+            'shuffle_train': True,  # Shuffle train data.
+            'shuffle_val': False,  # Shuffle val data.
             'loss_weights': None,  # Weight your loss w/ a dictionary.
             'validation_iters': 5000,  # How often to evaluate validation.
             'num_validation_evals': 100,  # How many validation batches.
@@ -212,7 +213,7 @@ class experiments():
         exp = {
             'experiment_name': [model_folder],
             'lr': [5e-3, 1e-3, 5e-4, 1e-4],
-            'loss_function': ['cce'],
+            'loss_function': ['cce@cce'],
             'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(model_folder, 'gru1d_1'),
@@ -241,8 +242,8 @@ class experiments():
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['epochs'] = 100
         exp['validation_iters'] = 200
-        exp['num_validation_evals'] = 225
-        exp['batch_size'] = 20  # Train/val batch size.
+        exp['num_validation_evals'] = 629
+        exp['batch_size'] = 16  # Train/val batch size.
         exp['save_weights'] = True
         exp['data_augmentations'] = [
             [
@@ -272,18 +273,19 @@ class experiments():
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['epochs'] = 500
         exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 107  # 225
+        exp['num_validation_evals'] = 629  # 225
         exp['batch_size'] = 16  # Train/val batch size.
         exp['save_weights'] = True
         exp['data_augmentations'] = [
             [
                 # None
-                # 'resize'
+                # 'resize',
+                'resize_and_crop',
                 # 'calculate_rate_time_crop',
                 'left_right',
                 # 'random_time_crop',
                 # 'center_crop',
-                'random_crop',
+                # 'random_crop',
                 'up_down'
                 # 'rotate'
             ]

@@ -153,6 +153,26 @@ class ff(object):
             filter_size=filter_size)
         return context, act
 
+    def alexnet_conv(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Add a 2D convolution layer."""
+        context, act = alexnet_conv_layer(
+            self=context,
+            bottom=act,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            name=name,
+            filter_size=filter_size,
+            aux=it_dict)
+        return context, act
+
     def conv3d(
             self,
             context,
@@ -267,7 +287,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def gru2d(
@@ -286,7 +307,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def sepgru2d(
@@ -305,7 +327,28 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
+        return context, act
+
+    def alexnet_sepgru2d(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Convolutional GRU w alexnet FF drive."""
+        context, act = alexnet_sepgru2d_layer(
+            self=context,
+            bottom=act,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            name=name,
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def mru2d(
@@ -324,7 +367,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def rnn2d(
@@ -343,7 +387,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def lstm1d(
@@ -362,7 +407,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def gru1d(
@@ -381,7 +427,8 @@ class ff(object):
             in_channels=in_channels,
             out_channels=out_channels,
             name=name,
-            filter_size=filter_size)
+            filter_size=filter_size,
+            aux=it_dict)
         return context, act
 
     def conv1d(
@@ -824,6 +871,49 @@ def conv_layer(
             name=name)
         conv = tf.nn.conv2d(bottom, filt, stride, padding=padding)
         bias = tf.nn.bias_add(conv, conv_biases)
+        return self, bias
+
+
+def alexnet_conv_layer(
+        self,
+        bottom,
+        out_channels,
+        name,
+        in_channels=None,
+        filter_size=3,
+        stride=[1, 1, 1, 1],
+        padding='SAME',
+        aux=None):
+    """2D convolutional layer."""
+    assert aux is not None, 'Pass the location of alexnet weights.'
+    assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+    alexnet_weights = np.load(aux['alexnet_npy']).item()
+    alexnet_key = aux['alexnet_layer']
+    alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
+    with tf.variable_scope(name):
+        if in_channels is None:
+            in_channels = int(bottom.get_shape()[-1])
+        assert out_channels == alexnet_filter.shape[-1],\
+            'Set weights = %s.' % alexnet_filter.shape[-1]
+        if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
+            alexnet_filter = np.expand_dims(alexnet_filter[:, :, 0, :], axis=2)
+        elif in_channels < alexnet_filter.shape[-2]:
+            raise RuntimeError('Input features = %s, Alexnet features = %s' % (
+                in_channels, alexnet_filter.shape[-2]))
+        self, filters = get_var(
+            self=self,
+            initial_value=alexnet_filter,
+            name=name,
+            idx=0,
+            var_name=name + "_filters")
+        self, biases = get_var(
+            self=self,
+            initial_value=alexnet_bias,
+            name=name,
+            idx=1,
+            var_name=name + "_biases")
+        conv = tf.nn.conv2d(bottom, filters, stride, padding=padding)
+        bias = tf.nn.bias_add(conv, biases)
         return self, bias
 
 
@@ -1983,6 +2073,325 @@ def sepgru2d_layer(
         return self, h_updated
 
 
+def alexnet_sepgru2d_layer(
+        self,
+        bottom,
+        out_channels,
+        name,
+        in_channels=None,
+        filter_size=3,
+        gate_filter_size=1,
+        aux=None):
+    """2D separable GRU with alexnet filters."""
+    def sepgru_condition(
+            step,
+            timesteps,
+            split_bottom,
+            h,
+            x_z_depth_filters,
+            x_z_point_filters,
+            h_z_depth_filters,
+            h_z_point_filters,
+            h_z_point_bias,
+            x_r_depth_filters,
+            x_r_point_filters,
+            h_r_depth_filters,
+            h_r_point_filters,
+            h_r_point_bias,
+            x_filter,
+            h_depth_filter,
+            h_point_filter,
+            h_bias):
+        """Condition for ending GRU."""
+        return step < timesteps
+
+    def sepgru_body(
+            step,
+            timesteps,
+            split_bottom,
+            h,
+            x_z_depth_filters,
+            x_z_point_filters,
+            h_z_depth_filters,
+            h_z_point_filters,
+            h_z_point_bias,
+            x_r_depth_filters,
+            x_r_point_filters,
+            h_r_depth_filters,
+            h_r_point_filters,
+            h_r_point_bias,
+            x_filter,
+            h_depth_filter,
+            h_point_filter,
+            h_bias):
+        """Calculate updates for 2D separable GRU."""
+        # Concatenate X_t and the hidden state
+        X = tf.gather(split_bottom, step)
+        if isinstance(h, list):
+            h_prev = tf.gather(h, step)
+        else:
+            h_prev = h
+
+        # Perform gate convolutions
+        x_z = tf.nn.separable_conv2d(
+            input=X,
+            depthwise_filter=x_z_depth_filters,
+            pointwise_filter=x_z_point_filters,
+            strides=[1, 1, 1, 1],
+            padding='SAME')
+        x_r = tf.nn.separable_conv2d(
+            input=X,
+            depthwise_filter=x_r_depth_filters,
+            pointwise_filter=x_r_point_filters,
+            strides=[1, 1, 1, 1],
+            padding='SAME')
+        h_z = tf.nn.separable_conv2d(
+            input=h_prev,
+            depthwise_filter=h_z_depth_filters,
+            pointwise_filter=h_z_point_filters,
+            strides=[1, 1, 1, 1],
+            padding='SAME')
+        h_r = tf.nn.separable_conv2d(
+            input=h_prev,
+            depthwise_filter=h_r_depth_filters,
+            pointwise_filter=h_r_point_filters,
+            strides=[1, 1, 1, 1],
+            padding='SAME')
+
+        # Calculate gates
+        z = gate_nl(x_z + h_z + h_z_point_bias)
+        r = gate_nl(x_r + h_r + h_r_point_bias)
+
+        # Update drives
+        h_update = tf.squeeze(r) * h_prev
+
+        # Perform FF/REC convolutions
+        x_convs = tf.nn.conv2d(
+            X,
+            x_filter,
+            [1, 1, 1, 1],
+            padding='SAME')
+        h_convs = tf.nn.separable_conv2d(
+            input=h_update,
+            depthwise_filter=h_depth_filter,
+            pointwise_filter=h_point_filter,
+            strides=[1, 1, 1, 1],
+            padding='SAME')
+
+        # Integrate circuit
+        z = tf.squeeze(z)
+        h_update = (z * h_prev) + ((1 - z) * cell_nl(
+            x_convs + h_convs + h_bias))
+        if isinstance(h, list):
+            # If we are storing the hidden state at each step
+            h[step] = h_update
+        else:
+            # If we are only keeping the final hidden state
+            h = h_update
+        step += 1
+        return (
+            step,
+            timesteps,
+            split_bottom,
+            h,
+            x_z_depth_filters,
+            x_z_point_filters,
+            h_z_depth_filters,
+            h_z_point_filters,
+            h_z_point_bias,
+            x_r_depth_filters,
+            x_r_point_filters,
+            h_r_depth_filters,
+            h_r_point_filters,
+            h_r_point_bias,
+            x_filter,
+            h_depth_filter,
+            h_point_filter,
+            h_bias)
+
+    # Scope the 2D GRU
+    with tf.variable_scope(name):
+        if in_channels is None:
+            in_channels = int(bottom.get_shape()[-1])
+        timesteps = int(bottom.get_shape()[1])
+
+        if aux is not None and 'gate_nl' in aux.keys():
+            gate_nl = aux['gate_nl']
+        else:
+            gate_nl = tf.sigmoid
+
+        if aux is not None and 'cell_nl' in aux.keys():
+            cell_nl = aux['cell_nl']
+        else:
+            cell_nl = tf.nn.relu
+
+        if aux is not None and 'random_init' in aux.keys():
+            random_init = aux['random_init']
+        else:
+            random_init = True
+
+        # GRU: pack z/r/h gates into a single tensor
+        # X_facing tensor, H_facing tensor for both weights and biases
+        channel_multiplier = 1
+
+        # Z
+        self, x_z_depth_filters, _ = get_conv_var(
+            self=self,
+            filter_size=gate_filter_size,
+            in_channels=in_channels,
+            out_channels=channel_multiplier,
+            name='%s_X_gate_depth_%s' % (name, 'z'))
+        self, x_z_point_filters, _ = get_conv_var(
+            self=self,
+            filter_size=1,
+            in_channels=in_channels * channel_multiplier,
+            out_channels=out_channels,
+            name='%s_X_gate_point_%s' % (name, 'z'))
+        self, h_z_depth_filters, _ = get_conv_var(
+            self=self,
+            filter_size=gate_filter_size,
+            in_channels=out_channels,  # For the hidden state
+            out_channels=channel_multiplier,
+            name='%s_H_gate_depth_%s' % (name, 'z'))
+        self, h_z_point_filters, h_z_point_bias = get_conv_var(
+            self=self,
+            filter_size=1,
+            in_channels=out_channels * channel_multiplier,
+            out_channels=out_channels,
+            name='%s_H_gate_point_%s' % (name, 'z'))
+
+        # R
+        self, x_r_depth_filters, _ = get_conv_var(
+            self=self,
+            filter_size=gate_filter_size,
+            in_channels=in_channels,
+            out_channels=channel_multiplier,
+            name='%s_X_gate_depth_%s' % (name, 'r'))
+        self, x_r_point_filters, _ = get_conv_var(
+            self=self,
+            filter_size=1,
+            in_channels=in_channels * channel_multiplier,
+            out_channels=out_channels,
+            name='%s_X_gate_point_%s' % (name, 'r'))
+        self, h_r_depth_filters, _ = get_conv_var(
+            self=self,
+            filter_size=gate_filter_size,
+            in_channels=out_channels,  # For the hidden state
+            out_channels=channel_multiplier,
+            name='%s_H_gate_depth_%s' % (name, 'r'))
+        self, h_r_point_filters, h_r_point_bias = get_conv_var(
+            self=self,
+            filter_size=1,
+            in_channels=out_channels * channel_multiplier,
+            out_channels=out_channels,
+            name='%s_H_gate_point_%s' % (name, 'r'))
+
+        # Split off last h weight
+        self, h_depth_filter, _ = get_conv_var(
+            self=self,
+            filter_size=filter_size,
+            in_channels=out_channels,  # For the hidden state
+            out_channels=channel_multiplier,
+            name='%s_H_gate_depth_%s' % (name, 'h'))
+        self, h_point_filter, _ = get_conv_var(
+            self=self,
+            filter_size=1,
+            in_channels=out_channels * channel_multiplier,
+            out_channels=out_channels,
+            name='%s_H_gate_point_%s' % (name, 'h'))
+
+        # Initialize FF drive w/ alexnet filters
+        assert aux is not None, 'Pass the location of alexnet weights.'
+        assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+        alexnet_weights = np.load(aux['alexnet_npy']).item()
+        alexnet_key = aux['alexnet_layer']
+        alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
+        assert out_channels == alexnet_filter.shape[-1],\
+            'Set weights = %s.' % alexnet_filter.shape[-1]
+        if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
+            alexnet_filter = np.expand_dims(alexnet_filter[:, :, 0, :], axis=2)
+        elif in_channels < alexnet_filter.shape[-2]:
+            raise RuntimeError('Input features = %s, Alexnet features = %s' % (
+                in_channels, alexnet_filter.shape[-2]))
+        self, x_filter = get_var(
+            self=self,
+            initial_value=alexnet_filter,
+            name=name,
+            idx=0,
+            var_name=name + "_filters")
+        self, h_bias = get_var(
+            self=self,
+            initial_value=alexnet_bias,
+            name=name,
+            idx=1,
+            var_name=name + "_biases")
+
+        # Split bottom up by timesteps and initialize cell and hidden states
+        split_bottom = tf.split(bottom, timesteps, axis=1)
+        split_bottom = [tf.squeeze(x, axis=1) for x in split_bottom]  # Time
+        h_size = [
+            int(x) for x in split_bottom[0].get_shape()[:-1]] + [out_channels]
+        if aux is not None and 'ff_aux' in aux.keys():
+            if 'store_hidden_states' in aux['ff_aux']:
+                if random_init:
+                    hidden_state = [
+                        tf.random_normal(
+                            shape=h_size,
+                            mean=0.0,
+                            stddev=0.1) for x in range(timesteps)]
+                else:
+                    hidden_state = [
+                        tf.zeros_like(split_bottom[0])
+                        for x in range(timesteps)]
+        else:
+            if random_init:
+                hidden_state = tf.random_normal(
+                    shape=h_size,
+                    mean=0.0,
+                    stddev=0.1)
+            else:
+                hidden_state = tf.zeros_like(h_size)
+
+        # While loop
+        step = tf.constant(0)  # timestep iterator
+        elems = [
+            step,
+            timesteps,
+            split_bottom,
+            hidden_state,
+            x_z_depth_filters,
+            x_z_point_filters,
+            h_z_depth_filters,
+            h_z_point_filters,
+            h_z_point_bias,
+            x_r_depth_filters,
+            x_r_point_filters,
+            h_r_depth_filters,
+            h_r_point_filters,
+            h_r_point_bias,
+            x_filter,
+            h_depth_filter,
+            h_point_filter,
+            h_bias
+        ]
+
+        if aux is not None and 'ff_aux' in aux.keys():
+            if 'swap_memory' in aux['ff_aux']:
+                swap_memory = aux['ff_aux']['swap_memory']
+        else:
+            swap_memory = True
+        returned = tf.while_loop(
+            sepgru_condition,
+            sepgru_body,
+            loop_vars=elems,
+            back_prop=True,
+            swap_memory=swap_memory)
+
+        # Prepare output
+        h_updated = returned[3]
+        return self, h_updated
+
+
 def gru2d_layer(
         self,
         bottom,
@@ -2922,12 +3331,12 @@ def multi_fc_layer(self, bottom, out_channels, name, in_channels=None):
         if in_channels is None:
             in_channels = int(bottom.get_shape()[-1])
         fcs = []
-        for oc in out_channels:
+        for idx, oc in enumerate(out_channels):
             self, weights, biases = get_fc_var(
                 self=self,
                 in_size=in_channels,
-                out_size=out_channels,
-                name=name)
+                out_size=oc,
+                name='%s_%s' % (name, idx))
 
             x = tf.reshape(bottom, [-1, in_channels])
             fcs += [tf.nn.bias_add(tf.matmul(x, weights), biases)]
