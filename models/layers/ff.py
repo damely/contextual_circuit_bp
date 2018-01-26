@@ -905,12 +905,11 @@ def alexnet_conv_layer(
         elif in_channels < alexnet_filter.shape[-2]:
             raise RuntimeError('Input features = %s, Alexnet features = %s' % (
                 in_channels, alexnet_filter.shape[-2]))
-        self, filters = get_var(
-            self=self,
-            initial_value=alexnet_filter,
-            name=name,
-            idx=0,
-            var_name=name + "_filters")
+        filters = tf.get_variable(
+            name=name + "_filters",
+            initializer=alexnet_filter,
+            trainable=train_alexnet)
+        self.var_dict[(name, 0)] = filters
         if init_bias:
             alexnet_bias = tf.truncated_normal([out_channels], .0, .001)
         self, biases = get_var(
