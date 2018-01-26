@@ -8,6 +8,7 @@ layer_structure = [
         'alexnet_layer': 'conv1',
         'trainable': True,
         'init_bias': True,
+        'cam_mask': True,
         'filter_size': [7],
         'names': ['sepgru2d1'],
         'activation': ['selu'],

@@ -342,11 +342,28 @@ def main(
             else:
                 tf.summary.scalar('training_accuracy', train_accuracy)
             if config.pr_curve:
-                pr_summary.op(
-                    tag='training_pr',
-                    predictions=train_scores,
-                    labels=train_labels,
-                    display_name='training_precision_recall')
+                if isinstance(train_scores, list):
+                    for pidx, train_score in enumerate(train_scores):
+                        train_label = train_labels[:, pidx]
+                        pr_summary.op(
+                            tag='training_pr_%s' % pidx,
+                            predictions=tf.cast(
+                                tf.argmax(
+                                    train_score,
+                                    axis=-1),
+                                tf.float32),
+                            labels=tf.cast(train_label, tf.bool),
+                            display_name='training_precision_recall_%s' % pidx)
+                else:
+                    pr_summary.op(
+                        tag='training_pr',
+                        predictions=tf.cast(
+                            tf.argmax(
+                                train_scores,
+                                axis=-1),
+                            tf.float32),
+                        labels=tf.cast(train_labels, tf.bool),
+                        display_name='training_precision_recall')
             log.info('Added training summaries.')
 
             # Validation model
@@ -422,11 +439,29 @@ def main(
             else:
                 tf.summary.scalar('validation_accuracy', val_accuracy)
             if config.pr_curve:
-                pr_summary.op(
-                    tag='validation_pr',
-                    predictions=val_scores,
-                    labels=val_labels,
-                    display_name='validation_precision_recall')
+                if isinstance(val_scores, list):
+                    for pidx, val_score in enumerate(val_scores):
+                        val_label = val_labels[:, pidx]
+                        pr_summary.op(
+                            tag='validation_pr_%s' % pidx,
+                            predictions=tf.cast(
+                                tf.argmax(
+                                    val_score,
+                                    axis=-1),
+                                tf.float32),
+                            labels=tf.cast(val_label, tf.bool),
+                            display_name='validation_precision_recall_%s' %
+                            pidx)
+                else:
+                    pr_summary.op(
+                        tag='validation_pr',
+                        predictions=tf.cast(
+                            tf.argmax(
+                                val_scores,
+                                axis=-1),
+                            tf.float32),
+                        labels=tf.cast(val_labels, tf.bool),
+                        display_name='validation_precision_recall')
             log.info('Added validation summaries.')
 
     # Set up summaries and saver

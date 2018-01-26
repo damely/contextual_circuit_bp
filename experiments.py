@@ -26,6 +26,7 @@ class experiments():
             'epochs': 200,
             'shuffle_train': True,  # Shuffle train data.
             'shuffle_val': False,  # Shuffle val data.
+            'save_validation_predictions': False,  # Save a numpy of preds/labels
             'pr_curve': False,  # Precision recall curve in tensorboard
             'loss_weights': None,  # Weight your loss w/ a dictionary.
             'validation_iters': 5000,  # How often to evaluate validation.
@@ -253,6 +254,7 @@ class experiments():
                 # 'random_time_crop'
             ]
         ]
+        exp['save_validation_predictions'] = True
         return exp
 
     def crcns_2d(self):
@@ -292,4 +294,5 @@ class experiments():
             ]
         ]
         exp['pr_curve'] = True
+        exp['save_validation_predictions'] = True
         return exp

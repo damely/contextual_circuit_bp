@@ -26,7 +26,7 @@ class data_processing(object):
         self.df_f_window = 10
         self.use_df_f = False
         self.save_pickle = True
-        self.shuffle_train = True
+        self.shuffle_train = False
         self.shuffle_test = False
         self.pickle_name = 'cell_3_dff.p'
         self.overwrite_numpy = False
@@ -401,6 +401,7 @@ class data_processing(object):
         cat_ids = full_cat_ids.reshape(num_events, -1).astype(np.int64)
 
         # Split into train/test
+        raw_labels = np.copy(cat_labels)
         cat_labels = np.expand_dims(
             cat_labels.sum(-1), axis=-1).astype(np.int64)
         cat_ids = np.expand_dims(cat_ids[:, 0], axis=-1)
@@ -414,6 +415,7 @@ class data_processing(object):
         # Cross validate with a proportion of images from each session
         train_images, train_labels, train_ids = [], [], []
         test_images, test_labels, test_ids = [], [], []
+        raw_test_labels, raw_train_labels = [], []
         for cid in np.unique(cat_ids):
             cidx = (cat_ids == cid).squeeze()
             cell_ims = cat_images[cidx]
@@ -426,6 +428,8 @@ class data_processing(object):
             test_images += [cell_ims[cv_split:]]
             test_labels += [cell_labels[cv_split:]]
             test_ids += [cell_ids[cv_split:]]
+            raw_train_labels += [raw_labels[cv_split:]]
+            raw_test_labels += [raw_labels[:cv_split]]
 
         train_images = np.concatenate(train_images)
         train_labels = np.concatenate(train_labels)
@@ -473,12 +477,15 @@ class data_processing(object):
 
         # Save a separate pickle if requested
         if self.save_pickle:
+            import ipdb;ipdb.set_trace()
             data = [
                 {
                     'calcium': train_images.squeeze().tolist(),
                     'labels': train_labels,
+                    'raw_train_labels': raw_train_labels,
                     'test_calcium': test_images.squeeze().tolist(),
                     'test_labels': test_labels,
+                    'raw_test_labels': raw_test_labels,
                     'fps': 60.
                 }
             ]

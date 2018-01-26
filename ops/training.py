@@ -75,7 +75,6 @@ def training_loop(
             train_vars = sess.run(train_dict.values())
             it_train_dict = {k: v for k, v in zip(
                 train_dict.keys(), train_vars)}
-            import ipdb;ipdb.set_trace()
             duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
             train_accs[step] = it_train_dict['train_accuracy_0']
@@ -176,7 +175,38 @@ def training_loop(
                                 config.experiment_name,
                                 step),
                             output_string=weight_dir)
+                    if config.save_validation_predictions:
+                        if isinstance(val_scores[step][0], list):
+                            save_val_scores, save_val_labels = {}, {}
+                            for vidx in range(len(val_scores[step][0])):
+                                save_val_scores[vidx] = []
+                                save_val_labels[vidx] = []
+                            for vs, vl in zip(
+                                    val_scores[step],
+                                    val_labels[step]):
+                                for vidx in range(len(vs)):
+                                    save_val_scores[vidx] += [vs[vidx]]
+                                    save_val_labels[vidx] += [vl[:, vidx]]
+                            for vidx in range(len(val_scores[step][0])):
+                                save_val_scores[vidx] = np.concatenate(
+                                    save_val_scores[vidx])
+                                save_val_labels[vidx] = np.concatenate(
+                                    save_val_labels[vidx])
+                        else:
+                            raise NotImplementedError('Needs testing.')
+                            save_val_scores = val_scores[step]
+                            save_val_labels = val_labels[step]
 
+                        save_val_data = {
+                            'val_scores': save_val_scores,
+                            'val_labels': save_val_labels
+                        }
+                        py_utils.save_npys(
+                            data=save_val_data,
+                            model_name='%s_%s' % (
+                                config.experiment_name,
+                                step),
+                            output_string=weight_dir)
                 if config.early_stop:
                     keys = np.sort([int(k) for k in val_accs.keys()])
                     sorted_vals = np.asarray([val_accs[k] for k in keys])

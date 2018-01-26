@@ -559,9 +559,9 @@ class data_processing(object):
             'train': train_labels.tolist(),
             'test': test_labels.tolist()
         }
-        print 'Spikes in training: %s' % np.sum(cat_labels[:cv_split, 0])
-        print 'Spikes in testing: %s' % np.sum(cat_labels[cv_split:, 0])
-        print 'Unique groups: %s' % np.unique(cat_labels[:, 1])
+        print 'Spikes in training: %s' % np.sum(train_labels[:, 0])
+        print 'Spikes in testing: %s' % np.sum(test_labels[:, 0])
+        print 'Unique groups: %s' % np.unique(train_labels[:, 1])
         return files, labels
 
     def get_data(self):

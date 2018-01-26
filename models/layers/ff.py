@@ -901,7 +901,7 @@ def alexnet_conv_layer(
         assert out_channels == alexnet_filter.shape[-1],\
             'Set weights = %s.' % alexnet_filter.shape[-1]
         if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
-            alexnet_filter = np.expand_dims(alexnet_filter[:, :, 0, :], axis=2)
+            alexnet_filter = np.mean(alexnet_filter, axis=2, keepdims=True)
         elif in_channels < alexnet_filter.shape[-2]:
             raise RuntimeError('Input features = %s, Alexnet features = %s' % (
                 in_channels, alexnet_filter.shape[-2]))
@@ -1049,13 +1049,13 @@ def sep_conv_layer(
         self, pfilt, conv_biases = get_conv_var(
             self=self,
             filter_size=1,
-            in_channels=multiplier,
+            in_channels=in_channels * multiplier,
             out_channels=out_channels,
             name='p_%s' % name)
         conv = tf.nn.separable_conv2d(
             input=bottom,
             depthwise_filter=dfilt,
-            pointwise_filt=pfilt,
+            pointwise_filter=pfilt,
             strides=stride,
             padding=padding)
         bias = tf.nn.bias_add(conv, conv_biases)
@@ -2320,7 +2320,7 @@ def alexnet_sepgru2d_layer(
         assert out_channels == alexnet_filter.shape[-1],\
             'Set weights = %s.' % alexnet_filter.shape[-1]
         if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
-            alexnet_filter = np.expand_dims(alexnet_filter[:, :, 0, :], axis=2)
+            alexnet_filter = np.mean(alexnet_filter, axis=2, keepdims=True)
         elif in_channels < alexnet_filter.shape[-2]:
             raise RuntimeError('Input features = %s, Alexnet features = %s' % (
                 in_channels, alexnet_filter.shape[-2]))
@@ -2337,6 +2337,22 @@ def alexnet_sepgru2d_layer(
             name=name,
             idx=1,
             var_name=name + "_biases")
+
+        # User the FF filters to mask the sequence of images
+        if 'cam_mask' in aux.keys():
+            cam_mask = tf.nn.conv3d(
+                bottom,
+                tf.expand_dims(x_filter, axis=0),
+                strides=[1, 1, 1, 1, 1],
+                padding='SAME')
+            cam_mask = tf.reduce_mean(
+                cam_mask, reduction_indices=[1, 4], keep_dims=True)
+            cam_min = tf.reduce_min(
+                cam_mask, reduction_indices=[2, 3], keep_dims=True)
+            cam_max = tf.reduce_max(
+                cam_mask, reduction_indices=[2, 3], keep_dims=True)
+            cam_mask = (cam_mask - cam_min) / (cam_max - cam_min)
+            bottom *= cam_mask
 
         # Split bottom up by timesteps and initialize cell and hidden states
         split_bottom = tf.split(bottom, timesteps, axis=1)
