@@ -2,26 +2,26 @@
 
 layer_structure = [
     {
-        'layers': ['sepgru2d'],
-        'weights': [12],
+        'layers': ['alexnet_sepgru2d'],
+        'weights': [96],
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',
+        'alexnet_layer': 'conv1',
+        'trainable': True,
+        'init_bias': True,
         'filter_size': [7],
         'names': ['sepgru2d1'],
         'activation': ['selu'],
         'activation_target': ['post'],
     },
     {
-        'layers': ['pool'],
-        'weights': [None],
-        'names': ['pool2'],
-        'filter_size': [None]
-    },
-    {
-        'layers': ['conv'],
-        'weights': [24],
+        'layers': ['sep_conv'],
+        'weights': [12],
         'filter_size': [3],
-        'names': ['conv2'],
+        'names': ['sepconv2'],
         'activation': ['selu'],
         'activation_target': ['post'],
+        'dropout': [0.5],
+        'dropout_target': ['post']
     },
 ]
 

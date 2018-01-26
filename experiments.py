@@ -26,6 +26,7 @@ class experiments():
             'epochs': 200,
             'shuffle_train': True,  # Shuffle train data.
             'shuffle_val': False,  # Shuffle val data.
+            'pr_curve': False,  # Precision recall curve in tensorboard
             'loss_weights': None,  # Weight your loss w/ a dictionary.
             'validation_iters': 5000,  # How often to evaluate validation.
             'num_validation_evals': 100,  # How many validation batches.
@@ -264,7 +265,7 @@ class experiments():
             'optimizer': ['nadam'],
             'model_struct': [
                 # os.path.join(model_folder, 'sepgru2d'),
-                # os.path.join(model_folder, 'fc_sepgru2d'),
+                os.path.join(model_folder, 'fc_sepgru2d'),
                 os.path.join(model_folder, 'big_fc_sepgru2d'),
                 # os.path.join(model_folder, 'fc_gru2d_complex'),
             ],
@@ -290,4 +291,5 @@ class experiments():
                 # 'rotate'
             ]
         ]
+        exp['pr_curve'] = True
         return exp

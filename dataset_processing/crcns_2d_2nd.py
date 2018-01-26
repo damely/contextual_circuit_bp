@@ -333,7 +333,8 @@ class data_processing(object):
 
                 # Here's where it gets funky
                 time_f[d['id']] = np.asarray([
-                    float(format(x, '.4f')) for x in time_f[d['id']]]).squeeze()
+                    float(
+                        format(x, '.4f')) for x in time_f[d['id']]]).squeeze()
                 selected_spikes[d['id']] = []
                 form_e = [float(format(f, '.4f')) for f in time_e[d['id']]]
                 for idx in tqdm(
@@ -422,19 +423,42 @@ class data_processing(object):
         # Split into train/test
         cat_labels = np.expand_dims(cat_labels.sum(-1), axis=-1)
         cat_ids = np.expand_dims(cat_ids[:, 0], axis=-1)
-        cv_split = np.round(num_events * self.train_prop).astype(int)
-        full_cv_split = np.round(
-            len(full_cat_ids) * self.train_prop).astype(int)
 
         # Combine cat_labels and cat_ids
         cat_labels = np.concatenate((cat_labels, cat_ids), axis=-1)
-
         if self.binarize_spikes:
             cat_labels[cat_labels[:, 0] > 1, 0] = 1
-        train_images = cat_images[:cv_split]
-        test_images = cat_images[cv_split:]
-        train_labels = cat_labels[:cv_split]
-        test_labels = cat_labels[cv_split:]
+
+        # Cross validate with a proportion of images from each session
+        train_images, train_labels, train_ids = [], [], []
+        test_images, test_labels, test_ids = [], [], []
+        for cid in np.unique(cat_ids):
+            cidx = (cat_ids == cid).squeeze()
+            cell_ims = cat_images[cidx]
+            cell_labels = cat_labels[cidx]
+            cell_ids = cat_ids[cidx]
+            cv_split = np.round(cidx.sum() * self.train_prop).astype(int)
+            train_images += [cell_ims[:cv_split]]
+            train_labels += [cell_labels[:cv_split]]
+            train_ids += [cell_ids[:cv_split]]
+            test_images += [cell_ims[cv_split:]]
+            test_labels += [cell_labels[cv_split:]]
+            test_ids += [cell_ids[cv_split:]]
+
+        train_images = np.concatenate(train_images)
+        train_labels = np.concatenate(train_labels)
+        train_ids = np.concatenate(train_ids)
+        test_images = np.concatenate(test_images)
+        test_labels = np.concatenate(test_labels)
+        test_ids = np.concatenate(test_ids)
+
+        # cv_split = np.round(num_events * self.train_prop).astype(int)
+        # full_cv_split = np.round(
+        #     len(full_cat_ids) * self.train_prop).astype(int)
+        # train_images = cat_images[:cv_split]
+        # test_images = cat_images[cv_split:]
+        # train_labels = cat_labels[:cv_split]
+        # test_labels = cat_labels[cv_split:]
 
         # Fix imbalance with repetitions if requested
         if self.fix_imbalance_train:
@@ -481,8 +505,12 @@ class data_processing(object):
             im_dims = test_images.shape
             slice_test_images = test_images.reshape(
                 [np.prod(im_dims[:2]).tolist()] + list(im_dims[2:]))
-            slice_test_labels = full_cat_labels[full_cv_split:]
-            slice_test_ids = full_cat_ids[full_cv_split:]
+            slice_test_labels = test_labels[:, 0].repeat(
+                self.timepoints, axis=-1).reshape(-1, 1)
+            slice_test_ids = test_labels[:, 1].repeat(
+                self.timepoints, axis=-1).reshape(-1, 1)
+            # slice_test_labels = full_cat_labels[full_cv_split:]
+            # slice_test_ids = full_cat_ids[full_cv_split:]
 
             # Stagger into events separated by self.validation_slice
             num_staggered_events = len(
@@ -511,7 +539,6 @@ class data_processing(object):
                     staggered_test_ids[idx] = slice_test_ids[start]
                 start += self.validation_slice
 
-            # PROBLEM: Need a selection of events across cells...
             df_check = staggered_test_images.sum(
                 1, keepdims=True).sum(
                     2, keepdims=True).sum(

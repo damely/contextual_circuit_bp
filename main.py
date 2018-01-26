@@ -15,6 +15,7 @@ from ops import eval_metrics
 from ops import training
 from ops import hp_opt_utils
 from ops import tf_fun
+from tensorboard.plugins.pr_curve import summary as pr_summary
 
 
 def print_model_architecture(model_summary):
@@ -340,6 +341,12 @@ def main(
                     tf.summary.scalar('training_accuracy_%s' % tidx, ta)
             else:
                 tf.summary.scalar('training_accuracy', train_accuracy)
+            if config.pr_curve:
+                pr_summary.op(
+                    tag='training_pr',
+                    predictions=train_scores,
+                    labels=train_labels,
+                    display_name='training_precision_recall')
             log.info('Added training summaries.')
 
             # Validation model
@@ -414,6 +421,12 @@ def main(
                     tf.summary.scalar('validation_accuracy_%s' % vidx, va)
             else:
                 tf.summary.scalar('validation_accuracy', val_accuracy)
+            if config.pr_curve:
+                pr_summary.op(
+                    tag='validation_pr',
+                    predictions=val_scores,
+                    labels=val_labels,
+                    display_name='validation_precision_recall')
             log.info('Added validation summaries.')
 
     # Set up summaries and saver

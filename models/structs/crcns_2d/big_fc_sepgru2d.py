@@ -6,6 +6,8 @@ layer_structure = [
         'weights': [96],
         'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',
         'alexnet_layer': 'conv1',
+        'trainable': True,
+        'init_bias': True,
         'filter_size': [7],
         'names': ['sepgru2d1'],
         'activation': ['selu'],
@@ -18,6 +20,8 @@ layer_structure = [
         'names': ['conv2'],
         'activation': ['selu'],
         'activation_target': ['post'],
+        'dropout': [0.5],
+        'dropout_target': ['post']
     },
 ]
 

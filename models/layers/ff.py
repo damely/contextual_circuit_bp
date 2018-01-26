@@ -887,6 +887,11 @@ def alexnet_conv_layer(
     """2D convolutional layer."""
     assert aux is not None, 'Pass the location of alexnet weights.'
     assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+    train_alexnet, init_bias = True, False
+    if 'trainable' in aux.keys():
+        train_alexnet = aux['trainable']
+    if 'init_bias' in aux.keys():
+        init_bias = aux['init_bias']
     alexnet_weights = np.load(aux['alexnet_npy']).item()
     alexnet_key = aux['alexnet_layer']
     alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
@@ -906,6 +911,8 @@ def alexnet_conv_layer(
             name=name,
             idx=0,
             var_name=name + "_filters")
+        if init_bias:
+            alexnet_bias = tf.truncated_normal([out_channels], .0, .001)
         self, biases = get_var(
             self=self,
             initial_value=alexnet_bias,
@@ -2306,6 +2313,11 @@ def alexnet_sepgru2d_layer(
         alexnet_weights = np.load(aux['alexnet_npy']).item()
         alexnet_key = aux['alexnet_layer']
         alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
+        train_alexnet, init_bias = True, False
+        if 'trainable' in aux.keys():
+            train_alexnet = aux['trainable']
+        if 'init_bias' in aux.keys():
+            init_bias = aux['init_bias']
         assert out_channels == alexnet_filter.shape[-1],\
             'Set weights = %s.' % alexnet_filter.shape[-1]
         if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
@@ -2313,12 +2325,13 @@ def alexnet_sepgru2d_layer(
         elif in_channels < alexnet_filter.shape[-2]:
             raise RuntimeError('Input features = %s, Alexnet features = %s' % (
                 in_channels, alexnet_filter.shape[-2]))
-        self, x_filter = get_var(
-            self=self,
-            initial_value=alexnet_filter,
-            name=name,
-            idx=0,
-            var_name=name + "_filters")
+        x_filter = tf.get_variable(
+            name=name + "_filters",
+            initializer=alexnet_filter,
+            trainable=train_alexnet)
+        self.var_dict[(name, 0)] = x_filter
+        if init_bias:
+            alexnet_bias = tf.truncated_normal([out_channels], .0, .001)
         self, h_bias = get_var(
             self=self,
             initial_value=alexnet_bias,
