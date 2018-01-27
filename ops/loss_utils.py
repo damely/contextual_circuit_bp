@@ -1,4 +1,3 @@
-import math
 import numpy as np
 import tensorflow as tf
 from ops.eval_metrics import pearson_score

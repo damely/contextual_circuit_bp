@@ -412,6 +412,8 @@ class data_processing(object):
         if self.binarize_spikes:
             cat_labels[cat_labels[:, 0] > 1, 0] = 1
 
+        # TODO: Cell labels/raw labels... wtf
+
         # Cross validate with a proportion of images from each session
         train_images, train_labels, train_ids = [], [], []
         test_images, test_labels, test_ids = [], [], []
@@ -428,8 +430,8 @@ class data_processing(object):
             test_images += [cell_ims[cv_split:]]
             test_labels += [cell_labels[cv_split:]]
             test_ids += [cell_ids[cv_split:]]
-            raw_train_labels += [raw_labels[cv_split:]]
-            raw_test_labels += [raw_labels[:cv_split]]
+            raw_train_labels += [raw_labels[:cv_split]]
+            raw_test_labels += [raw_labels[cv_split:]]
 
         train_images = np.concatenate(train_images)
         train_labels = np.concatenate(train_labels)
@@ -437,6 +439,8 @@ class data_processing(object):
         test_images = np.concatenate(test_images)
         test_labels = np.concatenate(test_labels)
         test_ids = np.concatenate(test_ids)
+        raw_train_labels = np.concatenate(raw_train_labels)
+        raw_test_labels = np.concatenate(raw_test_labels)
 
         # cv_split = np.round(num_events * self.train_prop).astype(int)
         # full_cv_split = np.round(
@@ -456,10 +460,15 @@ class data_processing(object):
             spike_images = train_images[spike_idx.squeeze()]
             rep_spike_images = spike_images.repeat(rep, axis=0)
             rep_spike_labels = train_labels[spike_idx].repeat(rep, axis=0)
+            rep_raw_spike_labels = raw_train_labels[spike_idx].repeat(
+                rep, axis=0)
+            import ipdb; ipdb.set_trace()
             train_images = np.concatenate(
                 (train_images, rep_spike_images), axis=0)
             train_labels = np.concatenate(
                 (train_labels, rep_spike_labels), axis=0)
+            raw_train_labels = np.concatenate(
+                (raw_train_labels, rep_raw_spike_labels), axis=0)
 
         if self.fix_imbalance_test:
             spike_idx = test_labels[:, 0] > 0
@@ -470,14 +479,17 @@ class data_processing(object):
             spike_images = test_images[spike_idx.squeeze()]
             rep_spike_images = spike_images.repeat(rep, axis=0)
             rep_spike_labels = test_labels[spike_idx].repeat(rep, axis=0)
+            rep_raw_spike_labels = raw_test_labels[spike_idx].repeat(
+                rep, axis=0)
             test_images = np.concatenate(
                 (test_images, rep_spike_images), axis=0)
             test_labels = np.concatenate(
                 (test_labels, rep_spike_labels), axis=0)
+            raw_test_labels = np.concatenate(
+                (raw_test_labels, rep_raw_spike_labels), axis=0)
 
         # Save a separate pickle if requested
         if self.save_pickle:
-            import ipdb;ipdb.set_trace()
             data = [
                 {
                     'calcium': train_images.squeeze().tolist(),
