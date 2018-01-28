@@ -39,6 +39,7 @@ def add_to_config(d, config):
 
 def process_DB_exps(experiment_name, log, config):
     """Interpret and prepare hyperparams at runtime."""
+    import ipdb;ipdb.set_trace()
     exp_params, exp_id = db.get_parameters(
         experiment_name=experiment_name,
         log=log,
@@ -522,7 +523,7 @@ def main(
         config)
     log.info('Starting training')
     if load_and_evaluate_ckpt is not None:
-        output_dict = evaluation.evaluation_loop(
+        return evaluation.evaluation_loop(
             config=config,
             db=db,
             coord=coord,

@@ -209,7 +209,55 @@ class experiments():
         exp['save_weights'] = True
         return exp
 
-    def crcns_1d(self):
+    def crcns_1d_one_loss(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'crcns_1d'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [5e-3, 1e-3, 5e-4, 1e-4],
+            'loss_function': ['cce@cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                os.path.join(model_folder, 'gru1d_1'),
+                os.path.join(model_folder, 'gru1d_2'),
+                os.path.join(model_folder, 'gru1d_3'),
+                os.path.join(model_folder, 'gru1d_4'),
+                os.path.join(model_folder, 'gru1d_5'),
+                os.path.join(model_folder, 'gru1d_6'),
+                os.path.join(model_folder, 'gru1d_7'),
+                os.path.join(model_folder, 'gru1d_8'),
+                os.path.join(model_folder, 'gru1d_9'),
+                os.path.join(model_folder, 'gru1d_10'),
+                os.path.join(model_folder, 'gru1d_11'),
+                os.path.join(model_folder, 'gru1d_12'),
+                os.path.join(model_folder, 'gru1d_13'),
+                os.path.join(model_folder, 'gru1d_14'),
+                os.path.join(model_folder, 'gru1d_15'),
+                os.path.join(model_folder, 'gru1d_16'),
+                os.path.join(model_folder, 'gru1d_17'),
+                os.path.join(model_folder, 'gru1d_18'),
+                os.path.join(model_folder, 'gru1d_19'),
+                os.path.join(model_folder, 'gru1d_20'),
+            ],
+            'dataset': ['crcns_1d_2nd_one_loss']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['epochs'] = 100
+        exp['validation_iters'] = 200
+        exp['num_validation_evals'] = 629
+        exp['batch_size'] = 16  # Train/val batch size.
+        exp['save_weights'] = True
+        exp['data_augmentations'] = [
+            [
+                None
+                # 'calculate_rate',
+                # 'random_time_crop'
+            ]
+        ]
+        exp['save_validation_predictions'] = True
+        return exp
+
+    def crcns_1d_two_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
         model_folder = 'crcns_1d'
         exp = {
@@ -257,24 +305,24 @@ class experiments():
         exp['save_validation_predictions'] = True
         return exp
 
-    def crcns_2d(self):
+    def crcns_2d_one_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
         model_folder = 'crcns_2d'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [3e-4],
+            'lr': [5e-4, 1e-4],
             'loss_function': ['cce@cce'],
             'optimizer': ['nadam'],
             'model_struct': [
-                # os.path.join(model_folder, 'sepgru2d'),
-                os.path.join(model_folder, 'fc_sepgru2d'),
-                os.path.join(model_folder, 'big_fc_sepgru2d'),
-                # os.path.join(model_folder, 'fc_gru2d_complex'),
+                os.path.join(model_folder, 'narrow_gru_nm'),
+                os.path.join(model_folder, 'narrow_gru'),
+                os.path.join(model_folder, 'wide_gru_nm'),
+                os.path.join(model_folder, 'wide_gru')
             ],
-            'dataset': ['crcns_2d_2nd']
+            'dataset': ['crcns_2d_2nd_single_loss']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['epochs'] = 500
+        exp['epochs'] = 100
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 629  # 225
         exp['batch_size'] = 16  # Train/val batch size.
@@ -296,3 +344,44 @@ class experiments():
         exp['pr_curve'] = True
         exp['save_validation_predictions'] = True
         return exp
+
+    def crcns_2d_two_loss(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'crcns_2d'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [5e-4, 1e-4],
+            'loss_function': ['cce@cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                os.path.join(model_folder, 'narrow_gru_nm'),
+                os.path.join(model_folder, 'narrow_gru'),
+                os.path.join(model_folder, 'wide_gru_nm'),
+                os.path.join(model_folder, 'wide_gru')
+            ],
+            'dataset': ['crcns_2d_2nd']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['epochs'] = 100
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 629  # 225
+        exp['batch_size'] = 16  # Train/val batch size.
+        exp['save_weights'] = True
+        exp['data_augmentations'] = [
+            [
+                # None
+                # 'resize',
+                'resize_and_crop',
+                # 'calculate_rate_time_crop',
+                'left_right',
+                # 'random_time_crop',
+                # 'center_crop',
+                # 'random_crop',
+                'up_down'
+                # 'rotate'
+            ]
+        ]
+        exp['pr_curve'] = True
+        exp['save_validation_predictions'] = True
+        return exp
+

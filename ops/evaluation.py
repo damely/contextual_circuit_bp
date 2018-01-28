@@ -80,7 +80,7 @@ def evaluation_loop(
                 train_dict.keys(), train_vars)}
             duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
-            train_accs[step] = it_train_dict['train_accuracy']
+            train_accs[step] = it_train_dict['train_accuracy_0']
             train_images[step] = it_train_dict['train_images']
             train_labels[step] = it_train_dict['train_labels']
             train_scores[step] = it_train_dict['train_scores']
@@ -104,9 +104,9 @@ def evaluation_loop(
                     val_vars = sess.run(val_dict.values())
                     it_val_dict = {k: v for k, v in zip(
                         val_dict.keys(), val_vars)}
-                    it_val_acc = np.append(
-                        it_val_acc,
-                        it_val_dict['val_accuracy'])
+                    # it_val_acc = np.append(
+                    #     it_val_acc,
+                    #     it_val_dict['val_accuracy'])
                     it_val_loss = np.append(
                         it_val_loss,
                         it_val_dict['val_loss'])
@@ -118,9 +118,9 @@ def evaluation_loop(
                             for itk, itv in it_val_dict.iteritems()
                             if 'aux_score' in itk}
                         it_val_aux += [iva]
-                val_acc = it_val_acc.mean()
+                # val_acc = it_val_acc.mean()
                 val_lo = it_val_loss.mean()
-                val_accs[step] = val_acc
+                # val_accs[step] = val_acc
                 val_losses[step] = val_lo
                 val_scores[step] = it_val_scores
                 val_labels[step] = it_val_labels
@@ -165,6 +165,8 @@ def evaluation_loop(
             config.experiment_name,
             step),
         output_string=weight_dir)
+
+    return val_labels, val_scores
 
     # Package output variables into a dictionary
     # output_dict = {

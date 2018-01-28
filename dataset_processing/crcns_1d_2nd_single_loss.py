@@ -9,11 +9,11 @@ import cPickle as pickle
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'crcns_1d_2nd'
+        self.name = 'crcns_1d_2nd_single_loss'
         self.config = Config()
         self.file_extension = '.csv'
         self.timepoints = 10  # Data is 100hz
-        self.output_size = [2]
+        self.output_size = [1]
         self.im_size = [self.timepoints, 1]
         self.model_input_image_size = [self.timepoints, 1]
         self.default_loss_function = 'sigmoid_logits'
@@ -55,7 +55,7 @@ class data_processing(object):
                 length=self.im_size,
                 dtype='float'),
             'label': tf_fun.fixed_len_feature(
-                length=self.output_size[-1], dtype='int64')
+                dtype='int64')
         }
         self.tf_reader = {
             'image': {
@@ -64,7 +64,7 @@ class data_processing(object):
             },
             'label': {
                 'dtype': tf.int64,
-                'reshape': self.output_size
+                'reshape': None
             }
         }
 
@@ -554,6 +554,10 @@ class data_processing(object):
             test_labels = np.concatenate((
                 staggered_test_labels[dfs],
                 staggered_test_ids[dfs]), axis=-1).astype(np.int64)
+
+        # Remove the cell-id column from labels
+        train_labels = train_labels[:, 0]
+        test_labels = test_labels[:, 0]
 
         # Sum labels per event (total spikes)
         files = {
