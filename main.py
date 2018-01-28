@@ -39,7 +39,6 @@ def add_to_config(d, config):
 
 def process_DB_exps(experiment_name, log, config):
     """Interpret and prepare hyperparams at runtime."""
-    import ipdb;ipdb.set_trace()
     exp_params, exp_id = db.get_parameters(
         experiment_name=experiment_name,
         log=log,

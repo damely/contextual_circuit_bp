@@ -61,6 +61,16 @@ def metric_interpreter(metric, pred, labels):
             return sigmoid_accuracy(
                 pred=pred,
                 labels=labels)
+        elif metric == 'argmax_softmax_accuracy':
+            final_dim = len(pred.get_shape()) - 1
+            proc_pred = tf.cast(
+                tf.argmax(tf.nn.softmax(pred, dim=-1), axis=final_dim),
+                tf.float32)
+            label = tf.cast(labels, tf.float32)
+            return tf.reduce_mean(
+                 tf.cast(
+                     tf.equal(
+                         proc_pred, label), tf.float32))
         elif metric == 'f1':
             return f1(
                 pred=pred,

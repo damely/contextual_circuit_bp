@@ -211,11 +211,11 @@ class experiments():
 
     def crcns_1d_one_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_1d'
+        model_folder = 'crcns_1d_one_loss'
         exp = {
             'experiment_name': [model_folder],
             'lr': [5e-3, 1e-3, 5e-4, 1e-4],
-            'loss_function': ['cce@cce'],
+            'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(model_folder, 'gru1d_1'),
@@ -239,11 +239,11 @@ class experiments():
                 os.path.join(model_folder, 'gru1d_19'),
                 os.path.join(model_folder, 'gru1d_20'),
             ],
-            'dataset': ['crcns_1d_2nd_one_loss']
+            'dataset': ['crcns_1d_2nd_single_loss']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['epochs'] = 100
-        exp['validation_iters'] = 200
+        exp['validation_iters'] = 500
         exp['num_validation_evals'] = 629
         exp['batch_size'] = 16  # Train/val batch size.
         exp['save_weights'] = True
@@ -259,7 +259,7 @@ class experiments():
 
     def crcns_1d_two_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_1d'
+        model_folder = 'crcns_1d_two_loss'
         exp = {
             'experiment_name': [model_folder],
             'lr': [5e-3, 1e-3, 5e-4, 1e-4],
@@ -291,7 +291,7 @@ class experiments():
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['epochs'] = 100
-        exp['validation_iters'] = 200
+        exp['validation_iters'] = 500
         exp['num_validation_evals'] = 629
         exp['batch_size'] = 16  # Train/val batch size.
         exp['save_weights'] = True
@@ -307,11 +307,11 @@ class experiments():
 
     def crcns_2d_one_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_2d'
+        model_folder = 'crcns_2d_one_loss'
         exp = {
             'experiment_name': [model_folder],
             'lr': [5e-4, 1e-4],
-            'loss_function': ['cce@cce'],
+            'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(model_folder, 'narrow_gru_nm'),
@@ -347,7 +347,7 @@ class experiments():
 
     def crcns_2d_two_loss(self):
         """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_2d'
+        model_folder = 'crcns_2d_two_loss'
         exp = {
             'experiment_name': [model_folder],
             'lr': [5e-4, 1e-4],

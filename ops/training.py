@@ -193,7 +193,6 @@ def training_loop(
                                 save_val_labels[vidx] = np.concatenate(
                                     save_val_labels[vidx])
                         else:
-                            raise NotImplementedError('Needs testing.')
                             save_val_scores = val_scores[step]
                             save_val_labels = val_labels[step]
 
