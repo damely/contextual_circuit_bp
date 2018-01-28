@@ -310,7 +310,7 @@ class experiments():
         model_folder = 'crcns_2d_one_loss'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [5e-4, 1e-4],
+            'lr': [3e-4, 1e-4],
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
@@ -350,7 +350,7 @@ class experiments():
         model_folder = 'crcns_2d_two_loss'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [5e-4, 1e-4],
+            'lr': [3e-4, 1e-4],
             'loss_function': ['cce@cce'],
             'optimizer': ['nadam'],
             'model_struct': [

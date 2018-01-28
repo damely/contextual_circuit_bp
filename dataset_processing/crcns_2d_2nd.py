@@ -14,7 +14,7 @@ class data_processing(object):
         self.timepoints = 10  # Data is 100hz
         self.output_size = [2]
         self.im_size = [self.timepoints, 256, 256, 1]
-        self.model_input_image_size = [100, 100, 1]
+        self.model_input_image_size = [164, 164, 1]
         self.default_loss_function = 'sigmoid_logits'
         self.score_metric = 'argmax_softmax_accuracy'
         self.fix_imbalance_train = True
