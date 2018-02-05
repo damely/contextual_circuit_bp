@@ -287,7 +287,7 @@ class experiments():
                 os.path.join(model_folder, 'gru1d_19'),
                 os.path.join(model_folder, 'gru1d_20'),
             ],
-            'dataset': ['crcns_1d_2nd']
+            'dataset': ['crcns_1d_2nd_repeat']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['epochs'] = 100
@@ -311,47 +311,7 @@ class experiments():
         exp = {
             'experiment_name': [model_folder],
             'lr': [3e-4, 1e-4],
-            'loss_function': ['cce'],
-            'optimizer': ['nadam'],
-            'model_struct': [
-                os.path.join(model_folder, 'narrow_gru_nm'),
-                os.path.join(model_folder, 'narrow_gru'),
-                os.path.join(model_folder, 'wide_gru_nm'),
-                os.path.join(model_folder, 'wide_gru')
-            ],
-            'dataset': ['crcns_2d_2nd_single_loss']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['epochs'] = 100
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 629  # 225
-        exp['batch_size'] = 16  # Train/val batch size.
-        exp['save_weights'] = True
-        exp['data_augmentations'] = [
-            [
-                # None
-                # 'resize',
-                'resize_and_crop',
-                # 'calculate_rate_time_crop',
-                'left_right',
-                # 'random_time_crop',
-                # 'center_crop',
-                # 'random_crop',
-                'up_down'
-                # 'rotate'
-            ]
-        ]
-        exp['pr_curve'] = True
-        exp['save_validation_predictions'] = True
-        return exp
-
-    def crcns_2d_two_loss(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_2d_two_loss'
-        exp = {
-            'experiment_name': [model_folder],
-            'lr': [3e-4, 1e-4],
-            'loss_function': ['cce@cce'],
+            'loss_function': ['cce@zero'],
             'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(model_folder, 'narrow_gru_nm'),
@@ -377,11 +337,52 @@ class experiments():
                 # 'random_time_crop',
                 # 'center_crop',
                 # 'random_crop',
-                'up_down'
-                # 'rotate'
+                'up_down',
+                'rotate'
             ]
         ]
         exp['pr_curve'] = True
         exp['save_validation_predictions'] = True
         return exp
 
+    def crcns_2d_two_loss(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'crcns_2d_two_loss'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [3e-4],  # , 1e-4],
+            # 'loss_function': ['cce@cce'],
+            'loss_function': ['cce@zero'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                # os.path.join(model_folder, 'narrow_gru_nm'),
+                os.path.join(model_folder, 'narrow_gru'),
+                # os.path.join(model_folder, 'wide_gru_nm'),
+                # os.path.join(model_folder, 'wide_gru')
+            ],
+            # 'dataset': ['crcns_2d_2nd_held_out']
+            'dataset': ['crcns_2d_2nd']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['epochs'] = 100
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 2 * 629  # 225
+        exp['batch_size'] = 8  # Train/val batch size.
+        exp['save_weights'] = True
+        exp['data_augmentations'] = [
+            [
+                # None
+                # 'resize',
+                'resize_and_crop',
+                # 'calculate_rate_time_crop',
+                'left_right',
+                # 'random_time_crop',
+                # 'center_crop',
+                # 'random_crop',
+                'up_down',
+                'rotate'
+            ]
+        ]
+        exp['pr_curve'] = True
+        exp['save_validation_predictions'] = True
+        return exp

@@ -8,17 +8,17 @@ from tqdm import tqdm
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'crcns_2d_2nd'
+        self.name = 'crcns_2d_2nd_repeat'
         self.config = Config()
         self.file_extension = '.csv'
         self.timepoints = 10  # Data is 100hz
         self.output_size = [2]
         self.im_size = [self.timepoints, 256, 256, 1]
-        self.model_input_image_size = [96, 96, 1]
+        self.model_input_image_size = [150, 150, 1]
         self.default_loss_function = 'sigmoid_logits'
         self.score_metric = 'argmax_softmax_accuracy'
         self.fix_imbalance_train = True
-        self.fix_imbalance_test = False
+        self.fix_imbalance_test = True
         self.preprocess = ['resize']
         self.train_prop = 0.80
         self.binarize_spikes = True
@@ -27,7 +27,7 @@ class data_processing(object):
         self.shuffle_train = True
         self.shuffle_test = False
         self.overwrite_numpy = False
-        self.validation_slice = 2
+        self.validation_slice = 0  # 2
 
         # CRCNS data pointers
         self.crcns_dataset = os.path.join(

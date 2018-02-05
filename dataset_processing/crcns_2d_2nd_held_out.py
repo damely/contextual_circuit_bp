@@ -8,17 +8,18 @@ from tqdm import tqdm
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'crcns_2d_2nd'
+        self.name = 'crcns_2d_2nd_held_out'
         self.config = Config()
         self.file_extension = '.csv'
         self.timepoints = 10  # Data is 100hz
         self.output_size = [2]
         self.im_size = [self.timepoints, 256, 256, 1]
-        self.model_input_image_size = [96, 96, 1]
+        self.model_input_image_size = [128, 128, 1]
         self.default_loss_function = 'sigmoid_logits'
         self.score_metric = 'argmax_softmax_accuracy'
         self.fix_imbalance_train = True
         self.fix_imbalance_test = False
+        self.selected_cell = 0
         self.preprocess = ['resize']
         self.train_prop = 0.80
         self.binarize_spikes = True
@@ -429,28 +430,20 @@ class data_processing(object):
         if self.binarize_spikes:
             cat_labels[cat_labels[:, 0] > 1, 0] = 1
 
-        # Cross validate with a proportion of images from each session
+        # Cross validate with a whole cell
         train_images, train_labels, train_ids = [], [], []
         test_images, test_labels, test_ids = [], [], []
-        for cid in np.unique(cat_ids):
-            cidx = (cat_ids == cid).squeeze()
-            cell_ims = cat_images[cidx]
-            cell_labels = cat_labels[cidx]
-            cell_ids = cat_ids[cidx]
-            cv_split = np.round(cidx.sum() * self.train_prop).astype(int)
-            train_images += [cell_ims[:cv_split]]
-            train_labels += [cell_labels[:cv_split]]
-            train_ids += [cell_ids[:cv_split]]
-            test_images += [cell_ims[cv_split:]]
-            test_labels += [cell_labels[cv_split:]]
-            test_ids += [cell_ids[cv_split:]]
-
-        train_images = np.concatenate(train_images)
-        train_labels = np.concatenate(train_labels)
-        train_ids = np.concatenate(train_ids)
-        test_images = np.concatenate(test_images)
-        test_labels = np.concatenate(test_labels)
-        test_ids = np.concatenate(test_ids)
+        raw_test_labels, raw_train_labels = [], []
+        test_idx = (cat_ids == self.selected_cell).squeeze()
+        train_idx = test_idx == 0
+        train_images = cat_images[train_idx]
+        train_labels = cat_labels[train_idx]
+        train_ids = cat_ids[train_idx]
+        # raw_train_labels = raw_labels[train_idx]
+        test_images = cat_images[test_idx]
+        test_labels = cat_labels[test_idx]
+        test_ids = cat_ids[test_idx]
+        # raw_test_labels = raw_labels[test_idx]
 
         # cv_split = np.round(num_events * self.train_prop).astype(int)
         # full_cv_split = np.round(

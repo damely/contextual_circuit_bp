@@ -4,28 +4,32 @@ import tensorflow as tf
 from config import Config
 from ops import tf_fun
 from tqdm import tqdm
+import cPickle as pickle
 
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'crcns_2d_2nd'
+        self.name = 'crcns_1d_2nd_held_out'
         self.config = Config()
         self.file_extension = '.csv'
         self.timepoints = 10  # Data is 100hz
         self.output_size = [2]
-        self.im_size = [self.timepoints, 256, 256, 1]
-        self.model_input_image_size = [96, 96, 1]
+        self.im_size = [self.timepoints, 1]
+        self.model_input_image_size = [self.timepoints, 1]
         self.default_loss_function = 'sigmoid_logits'
         self.score_metric = 'argmax_softmax_accuracy'
         self.fix_imbalance_train = True
         self.fix_imbalance_test = False
-        self.preprocess = ['resize']
+        self.selected_cell = 0
+        self.preprocess = [None]
         self.train_prop = 0.80
         self.binarize_spikes = True
         self.df_f_window = 10
         self.use_df_f = False
+        self.save_pickle = True
         self.shuffle_train = True
         self.shuffle_test = False
+        self.pickle_name = 'cell_3_dff.p'
         self.overwrite_numpy = False
         self.validation_slice = 2
 
@@ -37,19 +41,20 @@ class data_processing(object):
         self.exp_name = 'GCaMP6s_9cells_Chen2013'
         self.numpy = os.path.join(
             self.crcns_dataset,
-            '%s.npz' % self.exp_name)
+            '%s_1d.npz' % self.exp_name)
 
         # CC-BP dataset vars
         self.folds = {
             'train': 'train',
-            'test': 'test'
-        }
+            'test': 'test'}
         self.targets = {
-            'image': tf_fun.bytes_feature,
+            'image': tf_fun.float_feature,
             'label': tf_fun.int64_feature
         }
         self.tf_dict = {
-            'image': tf_fun.fixed_len_feature(dtype='string'),
+            'image': tf_fun.fixed_len_feature(
+                length=self.im_size,
+                dtype='float'),
             'label': tf_fun.fixed_len_feature(
                 length=self.output_size[-1], dtype='int64')
         }
@@ -248,12 +253,11 @@ class data_processing(object):
         ]
 
         if not os.path.exists(self.numpy) or self.overwrite_numpy:
-            images, ss = {}, {}
+            ss = {}
             spikes, time_e = {}, {}
             corr_f, raw_f, time_f, df_f, cell_ids = {}, {}, {}, {}, {}
             selected_spikes = {}
             for d in cell_data:
-                images[d['id']] = []
                 spikes[d['id']] = []
                 time_e[d['id']] = []
                 corr_f[d['id']] = []
@@ -262,21 +266,6 @@ class data_processing(object):
                 ss[d['id']] = []
                 df_f[d['id']] = []
                 cell_ids[d['id']] = []
-
-                # Load images
-                for ims in tqdm(
-                        d['images'],
-                        total=len(d['images']),
-                        desc='Images of cell %s' % d['id']):
-                    images[d['id']] += [np.load(
-                        os.path.join(
-                            img_dir,
-                            'raw_data',
-                            'cell_npy',
-                            d['name'],
-                            ims)
-                        )]
-                images[d['id']] = np.concatenate(images[d['id']], axis=0)
 
                 # Load e
                 for e in tqdm(
@@ -333,8 +322,8 @@ class data_processing(object):
 
                 # Here's where it gets funky
                 time_f[d['id']] = np.asarray([
-                    float(
-                        format(x, '.4f')) for x in time_f[d['id']]]).squeeze()
+                    float(format(x, '.4f'))
+                    for x in time_f[d['id']]]).squeeze()
                 selected_spikes[d['id']] = []
                 form_e = [float(format(f, '.4f')) for f in time_e[d['id']]]
                 for idx in tqdm(
@@ -376,14 +365,12 @@ class data_processing(object):
             # For each cell being processed:
             #    files = images
             #    labels = selected_spikes
-            cat_images = np.concatenate([v for v in images.values()])
-            if len(cat_images.shape) == 3:
-                cat_images = np.expand_dims(cat_images, axis=-1)
-
-            # Add the cell_id
+            if self.use_df_f:
+                cat_images = np.concatenate([v for v in df_f.values()])
+            else:
+                cat_images = np.concatenate([v for v in corr_f.values()])
             cat_labels = np.concatenate([v for v in selected_spikes.values()])
             cat_ids = np.concatenate([v for v in cell_ids.values()])
-
             num_images = len(cat_images)
             num_labels = len(cat_labels)
             assert num_images == num_labels, 'Different numbers of ims/labs'
@@ -396,7 +383,6 @@ class data_processing(object):
                 cat_ids=cat_ids)
         else:
             cached_data = np.load(self.numpy)
-            print 'Loading data'
             cat_images = cached_data['cat_images']
             cat_labels = cached_data['cat_labels']
             cat_ids = cached_data['cat_ids']
@@ -404,65 +390,46 @@ class data_processing(object):
             num_labels = len(cat_labels)
             assert num_images == num_labels, 'Different numbers of ims/labs'
 
-        # Cut into distinct events -- start with reshape for this
+        # Turn data into events  -- to start just reshape
         num_events = int(num_images / self.timepoints)
         total_events = num_events * self.timepoints
         cat_images = cat_images[:total_events]
         full_cat_labels = cat_labels[:total_events]
+        cat_images = cat_images.reshape(num_events, -1)
+        cat_labels = full_cat_labels.reshape(num_events, -1)
+        cat_images = np.expand_dims(cat_images, axis=-1).astype(np.float32)
         full_cat_ids = cat_ids[:total_events]
-        im_shape = cat_images.shape
-        cat_images = cat_images.reshape(
-            num_events,
-            self.timepoints,
-            im_shape[1],
-            im_shape[2],
-            im_shape[3]).astype(np.float32)
-        cat_labels = full_cat_labels.reshape(num_events, -1).astype(np.int64)
         cat_ids = full_cat_ids.reshape(num_events, -1).astype(np.int64)
 
         # Split into train/test
-        cat_labels = np.expand_dims(cat_labels.sum(-1), axis=-1)
+        raw_labels = np.copy(cat_labels)
+        cat_labels = np.expand_dims(
+            cat_labels.sum(-1), axis=-1).astype(np.int64)
         cat_ids = np.expand_dims(cat_ids[:, 0], axis=-1)
 
         # Combine cat_labels and cat_ids
         cat_labels = np.concatenate((cat_labels, cat_ids), axis=-1)
+
         if self.binarize_spikes:
             cat_labels[cat_labels[:, 0] > 1, 0] = 1
 
-        # Cross validate with a proportion of images from each session
+        # Cross validate with a whole cell
         train_images, train_labels, train_ids = [], [], []
         test_images, test_labels, test_ids = [], [], []
-        for cid in np.unique(cat_ids):
-            cidx = (cat_ids == cid).squeeze()
-            cell_ims = cat_images[cidx]
-            cell_labels = cat_labels[cidx]
-            cell_ids = cat_ids[cidx]
-            cv_split = np.round(cidx.sum() * self.train_prop).astype(int)
-            train_images += [cell_ims[:cv_split]]
-            train_labels += [cell_labels[:cv_split]]
-            train_ids += [cell_ids[:cv_split]]
-            test_images += [cell_ims[cv_split:]]
-            test_labels += [cell_labels[cv_split:]]
-            test_ids += [cell_ids[cv_split:]]
-
-        train_images = np.concatenate(train_images)
-        train_labels = np.concatenate(train_labels)
-        train_ids = np.concatenate(train_ids)
-        test_images = np.concatenate(test_images)
-        test_labels = np.concatenate(test_labels)
-        test_ids = np.concatenate(test_ids)
-
-        # cv_split = np.round(num_events * self.train_prop).astype(int)
-        # full_cv_split = np.round(
-        #     len(full_cat_ids) * self.train_prop).astype(int)
-        # train_images = cat_images[:cv_split]
-        # test_images = cat_images[cv_split:]
-        # train_labels = cat_labels[:cv_split]
-        # test_labels = cat_labels[cv_split:]
+        raw_test_labels, raw_train_labels = [], []
+        test_idx = (cat_ids == self.selected_cell).squeeze()
+        train_idx = test_idx == 0
+        train_images = cat_images[train_idx]
+        train_labels = cat_labels[train_idx]
+        train_ids = cat_ids[train_idx]
+        raw_train_labels = raw_labels[train_idx]
+        test_images = cat_images[test_idx]
+        test_labels = cat_labels[test_idx]
+        test_ids = cat_ids[test_idx]
+        raw_test_labels = raw_labels[test_idx]
 
         # Fix imbalance with repetitions if requested
         if self.fix_imbalance_train:
-            # Train repeat
             spike_idx = train_labels[:, 0] > 0
             num_spikes = spike_idx.sum()
             num_events = len(train_labels)
@@ -471,10 +438,14 @@ class data_processing(object):
             spike_images = train_images[spike_idx.squeeze()]
             rep_spike_images = spike_images.repeat(rep, axis=0)
             rep_spike_labels = train_labels[spike_idx].repeat(rep, axis=0)
+            rep_raw_spike_labels = raw_train_labels[spike_idx].repeat(
+                rep, axis=0)
             train_images = np.concatenate(
                 (train_images, rep_spike_images), axis=0)
             train_labels = np.concatenate(
                 (train_labels, rep_spike_labels), axis=0)
+            raw_train_labels = np.concatenate(
+                (raw_train_labels, rep_raw_spike_labels), axis=0)
 
         if self.fix_imbalance_test:
             spike_idx = test_labels[:, 0] > 0
@@ -485,10 +456,32 @@ class data_processing(object):
             spike_images = test_images[spike_idx.squeeze()]
             rep_spike_images = spike_images.repeat(rep, axis=0)
             rep_spike_labels = test_labels[spike_idx].repeat(rep, axis=0)
+            rep_raw_spike_labels = raw_test_labels[spike_idx].repeat(
+                rep, axis=0)
             test_images = np.concatenate(
                 (test_images, rep_spike_images), axis=0)
             test_labels = np.concatenate(
                 (test_labels, rep_spike_labels), axis=0)
+            raw_test_labels = np.concatenate(
+                (raw_test_labels, rep_raw_spike_labels), axis=0)
+
+        # Save a separate pickle if requested
+        if self.save_pickle:
+            data = [
+                {
+                    'calcium': train_images.squeeze().tolist(),
+                    'labels': train_labels,
+                    'raw_train_labels': raw_train_labels,
+                    'test_calcium': test_images.squeeze().tolist(),
+                    'test_labels': test_labels,
+                    'raw_test_labels': raw_test_labels,
+                    'fps': 60.
+                }
+            ]
+            f = open('%s' % self.pickle_name, 'wb')
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.close()
+            np.savez(self.pickle_name, **data[0])
 
         if self.shuffle_train:
             rand_order = np.random.permutation(len(train_images))
@@ -502,9 +495,7 @@ class data_processing(object):
 
         if self.validation_slice > 0:
             # Reshape test_images and test_labels
-            im_dims = test_images.shape
-            slice_test_images = test_images.reshape(
-                [np.prod(im_dims[:2]).tolist()] + list(im_dims[2:]))
+            slice_test_images = test_images.reshape(-1, 1)
             slice_test_labels = test_labels[:, 0].repeat(
                 self.timepoints, axis=-1).reshape(-1, 1)
             slice_test_ids = test_labels[:, 1].repeat(
@@ -517,11 +508,7 @@ class data_processing(object):
                 slice_test_images)
             num_zeros = num_staggered_events / self.validation_slice
             staggered_test_images = np.zeros((
-                num_zeros,
-                self.timepoints,
-                im_dims[2],
-                im_dims[3],
-                im_dims[4]))
+                num_zeros, self.timepoints))
             staggered_test_labels = np.zeros((
                 num_zeros, 1))
             staggered_test_ids = np.zeros((
@@ -533,19 +520,14 @@ class data_processing(object):
                     break
                 else:
                     staggered_test_images[idx] = slice_test_images[
-                        start:end]
+                        start:end].squeeze()
                     staggered_test_labels[idx] = slice_test_labels[
                         start:end].sum()
                     staggered_test_ids[idx] = slice_test_ids[start]
                 start += self.validation_slice
 
-            df_check = staggered_test_images.sum(
-                1, keepdims=True).sum(
-                    2, keepdims=True).sum(
-                        3, keepdims=True).sum(
-                            4, keepdims=True).squeeze()
-            dfs = df_check != 0.
-            test_images = staggered_test_images[dfs].astype(np.float32)
+            dfs = staggered_test_images.sum(-1) != 0.
+            test_images = np.expand_dims(staggered_test_images[dfs], axis=-1)
             test_labels = np.concatenate((
                 staggered_test_labels[dfs],
                 staggered_test_ids[dfs]), axis=-1).astype(np.int64)
@@ -567,3 +549,4 @@ class data_processing(object):
     def get_data(self):
         files, labels = self.pull_data()
         return files, labels
+

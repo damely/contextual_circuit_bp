@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import tensorflow as tf
 
@@ -207,7 +208,18 @@ def image_augmentations(
             image = center_crop(image, model_input_image_size)
             print 'Applying area resize.'
         if 'rotate' in data_augmentations and im_size_check:
-            raise NotImplementedError
+            max_theta = 30.
+            angle_rad = max_theta / 180 * math.pi
+            angles = tf.random_uniform([], -angle_rad, angle_rad)
+            transform = tf.contrib.image.angles_to_projective_transforms(
+                angles,
+                model_input_image_size[0],
+                model_input_image_size[1])
+            image = tf.contrib.image.transform(
+                image,
+                tf.contrib.image.compose_transforms(transform),
+                interpolation='BILINEAR')  # or 'NEAREST'
+            print 'Applying random rotate.'
         if 'resize_nn' in data_augmentations and im_size_check:
             assert len(image.get_shape()) == 3, '4D not implemented yet.'
             if len(model_input_image_size) > 2:

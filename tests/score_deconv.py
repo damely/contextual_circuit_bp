@@ -13,23 +13,24 @@ def deconv_model_info(pull_extra=True):
     data_dir = '/media/data_cifs/contextual_circuit/condition_evaluations/'
     suffix_dir = 'weights'
     models = {
-    'crcns_2d_2018_01_26_16_39_59': ['crcns_2d', '2d narrow GRU', 'r'],
-    'crcns_2d_2018_01_26_16_40_01': ['crcns_2d', '2d wide GRU', 'g'],
-    # 'crcns_2d_2018_01_26_19_15_07': ['crcns_2d', '2d narrow GRU 2', 'r'],
-    # 'crcns_2d_2018_01_27_14_36_28': ['crcns_2d', '2d wide GRU', 'b'],
-    # 'crcns_2d_2018_01_27_14_36_23': ['crcns_2d', '2d wide GRU', 'b'],
-    # 'crcns_2d_2018_01_27_10_18_17': ['crcns_2d', '2d wide GRU', 'b'],
-    # 'crcns_1d_2018_01_26_16_40_08': ['crcns_1d', '1d GRU_1', 'gray'],
-    # 'crcns_1d_2018_01_26_19_00_53': ['crcns_1d', '1d GRU_2', 'gray'],
-    # 'crcns_1d_2018_01_27_10_01_48': ['crcns_1d', 'best 1d', 'g'],
-    # 'crcns_1d_2018_01_26_19_00_53': ['crcns_1d', 'worst 1d', 'g'],
-    # 'crcns_1d_2018_01_27_09_19_54': ['crcns_1d', 'best 1d 2', 'g'],
-    # 'crcns_1d_2018_01_27_10_01_48': ['crcns_1d', 'worst 1d 2', 'g'],
+        # 'crcns_2d_2018_01_26_16_39_59': ['crcns_2d', '2d narrow GRU', 'r'],
+        # 'crcns_2d_2018_01_26_16_40_01': ['crcns_2d', '2d wide GRU', 'g'],
 
-    # 'crcns_2d_2018_01_27_11_20_19': ['crcns_2d', 'best 2d', 'k'],
-    # 'crcns_2d_2018_01_27_10_29_21': ['crcns_2d', 'worst 2d', 'k'],
-    # 'crcns_2d_2018_01_27_11_20_20': ['crcns_2d', 'best 2d 2', 'k'],
-    # 'crcns_2d_2018_01_27_10_18_17': ['crcns_2d', 'worst 2d 2', 'k'],
+        # 'crcns_2d_2018_01_26_19_15_07': ['crcns_2d', '2d narrow GRU 2', 'r'],
+        # 'crcns_2d_2018_01_27_14_36_28': ['crcns_2d', '2d wide GRU', 'b'],
+        # 'crcns_2d_2018_01_27_14_36_23': ['crcns_2d', '2d wide GRU', 'b'],
+        # 'crcns_2d_2018_01_27_10_18_17': ['crcns_2d', '2d wide GRU', 'b'],
+        # 'crcns_1d_2018_01_26_16_40_08': ['crcns_1d', '1d GRU_1', 'gray'],
+        # 'crcns_1d_2018_01_26_19_00_53': ['crcns_1d', '1d GRU_2', 'gray'],
+        # 'crcns_1d_2018_01_27_10_01_48': ['crcns_1d', 'best 1d', 'g'],
+        # 'crcns_1d_2018_01_26_19_00_53': ['crcns_1d', 'worst 1d', 'g'],
+        # 'crcns_1d_2018_01_27_09_19_54': ['crcns_1d', 'best 1d 2', 'g'],
+        # 'crcns_1d_2018_01_27_10_01_48': ['crcns_1d', 'worst 1d 2', 'g'],
+
+        # 'crcns_2d_2018_01_27_11_20_19': ['crcns_2d', 'best 2d', 'k'],
+        # 'crcns_2d_2018_01_27_10_29_21': ['crcns_2d', 'worst 2d', 'k'],
+        # 'crcns_2d_2018_01_27_11_20_20': ['crcns_2d', 'best 2d 2', 'k'],
+        # 'crcns_2d_2018_01_27_10_18_17': ['crcns_2d', 'worst 2d 2', 'k'],
     }
     if os.path.exists(os.path.join('tests', 'summaries.csv')) and pull_extra:
         models_1d = pd.read_csv(
@@ -38,13 +39,12 @@ def deconv_model_info(pull_extra=True):
             m[0].split(os.path.sep)[-1]
             for m in models_1d if os.path.exists(m[0])]
         for idx, m in enumerate(models_1d):
-            mname = '_'.join(m.split(os.path.sep)[-1].split('_')[:2])
+            mname = '_'.join(m.split(os.path.sep)[-1].split('_')[:4])
             if '1d' in mname:
                 color = 'gray'
             else:
                 color = 'b'
             models[m] = [mname, '%s GRU %s' % (m.split('_')[0], idx), color]
-
     return models, suffix_dir, data_dir
 
 
@@ -101,7 +101,7 @@ for d, model in tqdm(models.iteritems(), total=len(models)):
             suffix_dir,
             '*.npy'))
     model = model[0]
-    trim_files = [int(f.split(os.path.sep)[-1].split('_')[2]) for f in files]
+    trim_files = [int(f.split(os.path.sep)[-1].split('_')[4]) for f in files]
     evals = np.unique(trim_files)
     metric_dict = {}
     all_scores = {}
@@ -113,38 +113,46 @@ for d, model in tqdm(models.iteritems(), total=len(models)):
                 d,
                 suffix_dir,
                 '%s_%s_*.npy' % (model, it)))
+
         score_files = [f for f in it_files if 'val_' in f]
         assert len(score_files) == 2, 'Error in globbing %s' % d
         label_file = [f for f in score_files if 'labels' in f][0]
         score_file = [f for f in score_files if 'scores' in f][0]
-        labels = np.load(label_file).item()
-        scores = np.load(score_file).item()
+        try:
+            labels = np.load(label_file).item()
+            scores = np.load(score_file).item()
+        except:
+            labels = np.load(label_file)
+            scores = np.load(score_file)
+            labels = {0: labels.reshape(-1, 1)}
+            scores = {0: scores.reshape(-1, 2)}
         metric_output = {}
         eval_scores = {}
         eval_labels = {}
         for k, v in targets.iteritems():
-            metric_output[k] = {}
-            it_labels = np.copy(labels[k])
-            it_scores = np.copy(scores[k])
-            if v['binarize_labels']:
-                it_labels[it_labels > 1] = 1
-            if v['binarize_scores']:
-                it_scores[it_scores > 1] = 1
-            if v['argmax_labels']:
-                if len(it_labels.shape) == 0:
-                    it_labels = np.expand_dims(it_labels, axis=-1)
-                it_labels = np.argmax(it_labels, axis=-1)
-            if v['argmax_scores']:
-                if len(it_scores.shape) == 0:
-                    it_scores = np.expand_dims(it_scores, axis=-1)
-                it_scores = np.argmax(it_scores, axis=-1)
-            # eval_scores[k] = it_scores
-            # eval_labels[k] = it_labels
-            for m in v['metrics']:
-                metric = getattr(metrics, m)
-                metric_output[k][m] = metric(
-                    it_labels,
-                    it_scores)
+            if k in labels.keys():
+                metric_output[k] = {}
+                it_labels = np.copy(labels[k])
+                it_scores = np.copy(scores[k])
+                if v['binarize_labels']:
+                    it_labels[it_labels > 1] = 1
+                if v['binarize_scores']:
+                    it_scores[it_scores > 1] = 1
+                if v['argmax_labels']:
+                    if len(it_labels.shape) == 0:
+                        it_labels = np.expand_dims(it_labels, axis=-1)
+                    it_labels = np.argmax(it_labels, axis=-1)
+                if v['argmax_scores']:
+                    if len(it_scores.shape) == 0:
+                        it_scores = np.expand_dims(it_scores, axis=-1)
+                    it_scores = np.argmax(it_scores, axis=-1)
+                # eval_scores[k] = it_scores
+                # eval_labels[k] = it_labels
+                for m in v['metrics']:
+                    metric = getattr(metrics, m)
+                    metric_output[k][m] = metric(
+                        it_labels,
+                        it_scores)
         metric_dict[it] = metric_output
         # all_scores[it] = eval_scores
         # all_labels[it] = eval_labels
@@ -164,7 +172,7 @@ for d, model in tqdm(models.iteritems(), total=len(models)):
         sel_ckpt_path,
         'checkpoints',
         d,
-       'model_%s.ckpt-%s' % (top_eval, top_eval)) 
+       'model_%s.ckpt-%s' % (top_eval, top_eval))
     # selected_scores[d] = all_scores[top_eval]
     # selected_labels[d] = all_labels[top_eval]
 

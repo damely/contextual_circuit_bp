@@ -73,6 +73,8 @@ def loss_interpreter(
                     logits=logit,
                     labels=label,
                     weights=weights)
+            elif loss_type == 'zero':
+                it_loss, it_score = tf.constant(0.), tf.constant(0.)
             elif loss_type == 'tf_log_poisson':
                 logit = tf.cast(logit, tf.float32)
                 labels = tf.cast(labels, tf.float32)

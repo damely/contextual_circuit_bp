@@ -24,7 +24,7 @@ class data_processing(object):
         self.train_prop = 0.80
         self.binarize_spikes = True
         self.df_f_window = 10
-        self.use_df_f = False
+        self.use_df_f = True
         self.save_pickle = True
         self.shuffle_train = True
         self.shuffle_test = False
@@ -488,24 +488,6 @@ class data_processing(object):
             raw_test_labels = np.concatenate(
                 (raw_test_labels, rep_raw_spike_labels), axis=0)
 
-        # Save a separate pickle if requested
-        if self.save_pickle:
-            data = [
-                {
-                    'calcium': train_images.squeeze().tolist(),
-                    'labels': train_labels,
-                    'raw_train_labels': raw_train_labels,
-                    'test_calcium': test_images.squeeze().tolist(),
-                    'test_labels': test_labels,
-                    'raw_test_labels': raw_test_labels,
-                    'fps': 60.
-                }
-            ]
-            f = open('%s' % self.pickle_name, 'wb')
-            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-            f.close()
-            np.savez(self.pickle_name, **data[0])
-
         if self.shuffle_train:
             rand_order = np.random.permutation(len(train_images))
             train_images = train_images[rand_order]
@@ -521,6 +503,7 @@ class data_processing(object):
             slice_test_images = test_images.reshape(-1, 1)
             slice_test_labels = test_labels[:, 0].repeat(
                 self.timepoints, axis=-1).reshape(-1, 1)
+            # slice_test_labels = raw_test_labels.reshape(-1, 1)
             slice_test_ids = test_labels[:, 1].repeat(
                 self.timepoints, axis=-1).reshape(-1, 1)
             # slice_test_labels = full_cat_labels[full_cv_split:]
@@ -555,6 +538,24 @@ class data_processing(object):
                 staggered_test_labels[dfs],
                 staggered_test_ids[dfs]), axis=-1).astype(np.int64)
 
+        # Save a separate pickle if requested
+        if self.save_pickle:
+            data = [
+                {
+                    'calcium': train_images.squeeze().tolist(),
+                    'labels': train_labels,
+                    'raw_train_labels': raw_train_labels,
+                    'test_calcium': test_images.squeeze().tolist(),
+                    'test_labels': test_labels,
+                    'raw_test_labels': raw_test_labels,
+                    'fps': 60.
+                }
+            ]
+            f = open('%s' % self.pickle_name, 'wb')
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            f.close()
+            np.savez(self.pickle_name, **data[0])
+
         # Sum labels per event (total spikes)
         files = {
             'train': train_images,
@@ -572,4 +573,3 @@ class data_processing(object):
     def get_data(self):
         files, labels = self.pull_data()
         return files, labels
-

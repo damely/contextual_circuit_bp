@@ -56,7 +56,7 @@ def evaluation_loop(
     """Run the model training loop."""
     step = 0
     train_losses, train_accs, train_aux, timesteps = {}, {}, {}, {}
-    val_losses, val_accs, val_scores, val_aux, val_labels = {}, {}, {}, {}, {}
+    val_scores, val_aux, val_labels = {}, {}, {}
     train_images, val_images = {}, {}
     train_scores, train_labels = {}, {}
     train_aux_check = np.any(['aux_score' in k for k in train_dict.keys()])
@@ -96,20 +96,12 @@ def evaluation_loop(
                 it_train_dict['train_loss']
                 ).any(), 'Model diverged with loss = NaN'
             if step % config.validation_iters == 0:
-                it_val_acc = np.asarray([])
-                it_val_loss = np.asarray([])
                 it_val_scores, it_val_labels, it_val_aux = [], [], []
                 for num_vals in range(config.num_validation_evals):
                     # Validation accuracy as the average of n batches
                     val_vars = sess.run(val_dict.values())
                     it_val_dict = {k: v for k, v in zip(
                         val_dict.keys(), val_vars)}
-                    # it_val_acc = np.append(
-                    #     it_val_acc,
-                    #     it_val_dict['val_accuracy'])
-                    it_val_loss = np.append(
-                        it_val_loss,
-                        it_val_dict['val_loss'])
                     it_val_labels += [it_val_dict['val_labels']]
                     it_val_scores += [it_val_dict['val_scores']]
                     if val_aux_check:
@@ -118,10 +110,6 @@ def evaluation_loop(
                             for itk, itv in it_val_dict.iteritems()
                             if 'aux_score' in itk}
                         it_val_aux += [iva]
-                # val_acc = it_val_acc.mean()
-                val_lo = it_val_loss.mean()
-                # val_accs[step] = val_acc
-                val_losses[step] = val_lo
                 val_scores[step] = it_val_scores
                 val_labels[step] = it_val_labels
                 val_aux[step] = it_val_aux
