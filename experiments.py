@@ -195,6 +195,7 @@ class experiments():
                 # os.path.join(model_folder, 'conv3d'),
                 # os.path.join(model_folder, 'lstm2d'),
                 os.path.join(model_folder, 'gru2d'),
+                os.path.join(model_folder, 'alexnet_gru2d'),
                 # os.path.join(model_folder, 'rnn2d'),
                 os.path.join(model_folder, 'sgru2d'),
                 os.path.join(model_folder, 'alexnet_sgru2d')

@@ -1468,6 +1468,260 @@ def gru2d_layer(
         return self, h_updated
 
 
+def alexnet_gru2d_layer(
+        self,
+        bottom,
+        out_channels,
+        name,
+        in_channels=None,
+        filter_size=3,
+        gate_filter_size=1,
+        aux=None):
+    """2D GRU convolutional layer."""
+    def gru_condition(
+            step,
+            timesteps,
+            split_bottom,
+            h,
+            x_gate_filters,
+            h_gate_filters,
+            x_filter,
+            h_filter,
+            gate_biases,
+            h_bias):
+        """Condition for ending GRU."""
+        return step < timesteps
+
+    def gru_body(
+            step,
+            timesteps,
+            split_bottom,
+            h,
+            x_gate_filters,
+            h_gate_filters,
+            x_filter,
+            h_filter,
+            gate_biases,
+            h_bias):
+        """Calculate updates for 2D GRU."""
+        # Concatenate X_t and the hidden state
+        X = tf.gather(split_bottom, step)
+        if isinstance(h, list):
+            h_prev = tf.gather(h, step)
+        else:
+            h_prev = h
+
+        # Perform gate convolutions
+        x_gate_convs = tf.nn.conv2d(
+            X,
+            x_gate_filters,
+            [1, 1, 1, 1],
+            padding='SAME')
+        h_gate_convs = tf.nn.conv2d(
+            h_prev,
+            h_gate_filters,
+            [1, 1, 1, 1],
+            padding='SAME')
+
+        # Calculate gates
+        gate_activities = x_gate_convs + h_gate_convs + gate_biases
+        nl_activities = gate_nl(gate_activities)
+
+        # Reshape and split into appropriate gates
+        gate_sizes = [int(x) for x in nl_activities.get_shape()]
+        div_g = gate_sizes[:-1] + [gate_sizes[-1] // 2, 2]
+        res_gates = tf.reshape(
+                nl_activities,
+                div_g)
+        z, r = tf.split(res_gates, 2, axis=4)
+
+        # Update drives
+        h_update = tf.squeeze(r) * h_prev
+
+        # Perform FF/REC convolutions
+        x_convs = tf.nn.conv2d(
+            X,
+            x_filter,
+            [1, 1, 1, 1],
+            padding='SAME')
+        h_convs = tf.nn.conv2d(
+            h_update,
+            h_filter,
+            [1, 1, 1, 1],
+            padding='SAME')
+
+        # Integrate circuit
+        z = tf.squeeze(z)
+        h_update = (z * h_prev) + ((1 - z) * cell_nl(
+            x_convs + h_convs + h_bias))
+        if isinstance(h, list):
+            # If we are storing the hidden state at each step
+            h[step] = h_update
+        else:
+            # If we are only keeping the final hidden state
+            h = h_update
+        step += 1
+        return (
+                step,
+                timesteps,
+                split_bottom,
+                h,
+                x_gate_filters,
+                h_gate_filters,
+                x_filter,
+                h_filter,
+                gate_biases,
+                h_bias
+                )
+
+    # Scope the 2D GRU
+    with tf.variable_scope(name):
+        if in_channels is None:
+            in_channels = int(bottom.get_shape()[-1])
+        timesteps = int(bottom.get_shape()[1])
+
+        if aux is not None and 'gate_nl' in aux.keys():
+            gate_nl = aux['gate_nl']
+        else:
+            gate_nl = tf.sigmoid
+
+        if aux is not None and 'cell_nl' in aux.keys():
+            cell_nl = aux['cell_nl']
+        else:
+            cell_nl = tf.nn.relu
+
+        if aux is not None and 'random_init' in aux.keys():
+            random_init = aux['random_init']
+        else:
+            random_init = True
+
+        # GRU: pack z/r/h gates into a single tensor
+        # X_facing tensor, H_facing tensor for both weights and biases
+        x_weights, h_weights = [], []
+        biases = []
+        gates = ['z', 'r']
+        filter_sizes = [gate_filter_size] * 2
+        for idx, (g, fs) in enumerate(zip(gates, filter_sizes)):
+            self, iW, ib = ff.get_conv_var(
+                self=self,
+                filter_size=fs,
+                in_channels=in_channels,  # For the hidden state
+                out_channels=out_channels,
+                name='%s_X_gate_%s' % (name, g))
+            x_weights += [iW]
+            biases += [ib]
+            if idx != len(gates):
+                self, iW, ib = ff.get_conv_var(
+                    self=self,
+                    filter_size=fs,
+                    in_channels=out_channels,  # For the hidden state
+                    out_channels=out_channels,
+                    name='%s_H_gate_%s' % (name, g))
+                h_weights += [iW]
+
+        # Concatenate each into 3d tensors
+        x_gate_filters = tf.concat(x_weights, axis=-1)
+        h_gate_filters = tf.concat(h_weights, axis=-1)
+        gate_biases = tf.concat(biases, axis=0)
+
+        # Split off last h weight
+        self, h_filter, h_bias = ff.get_conv_var(
+            self=self,
+            filter_size=filter_size,
+            in_channels=out_channels,  # For the hidden state
+            out_channels=out_channels,
+            name='%s_H_gate_%s' % (name, 'h'))
+
+        # Initialize FF drive w/ alexnet filters
+        assert aux is not None, 'Pass the location of alexnet weights.'
+        assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+        alexnet_weights = np.load(aux['alexnet_npy']).item()
+        alexnet_key = aux['alexnet_layer']
+        alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
+        train_alexnet, init_bias = True, False
+        if 'trainable' in aux.keys():
+            train_alexnet = aux['trainable']
+        if 'init_bias' in aux.keys():
+            init_bias = aux['init_bias']
+        assert out_channels == alexnet_filter.shape[-1],\
+            'Set weights = %s.' % alexnet_filter.shape[-1]
+        if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
+            alexnet_filter = np.mean(alexnet_filter, axis=2, keepdims=True)
+        elif in_channels < alexnet_filter.shape[-2]:
+            raise RuntimeError('Input features = %s, Alexnet features = %s' % (
+                in_channels, alexnet_filter.shape[-2]))
+        x_filter = tf.get_variable(
+            name=name + "_filters",
+            initializer=alexnet_filter,
+            trainable=train_alexnet)
+        self.var_dict[(name, 0)] = x_filter
+        if init_bias:
+            alexnet_bias = tf.truncated_normal([out_channels], .0, .001)
+        self, h_bias = ff.get_var(
+            self=self,
+            initial_value=alexnet_bias,
+            name=name,
+            idx=1,
+            var_name=name + "_biases")
+
+        # Split bottom up by timesteps and initialize cell and hidden states
+        split_bottom = tf.split(bottom, timesteps, axis=1)
+        split_bottom = [tf.squeeze(x, axis=1) for x in split_bottom]  # Time
+        h_size = [
+            int(x) for x in split_bottom[0].get_shape()[:-1]] + [out_channels]
+        if aux is not None and 'ff_aux' in aux.keys():
+            if 'store_hidden_states' in aux['ff_aux']:
+                if random_init:
+                    hidden_state = [
+                        tf.random_normal(
+                            shape=h_size,
+                            mean=0.0,
+                            stddev=0.1) for x in range(timesteps)]
+                else:
+                    hidden_state = [
+                        tf.zeros_like(split_bottom[0])
+                        for x in range(timesteps)]
+        else:
+            if random_init:
+                hidden_state = tf.random_normal(
+                    shape=h_size,
+                    mean=0.0,
+                    stddev=0.1)
+            else:
+                hidden_state = tf.zeros_like(h_size)
+
+        # While loop
+        step = tf.constant(0)  # timestep iterator
+        elems = [
+            step,
+            timesteps,
+            split_bottom,
+            hidden_state,
+            x_gate_filters,
+            h_gate_filters,
+            x_filter,
+            h_filter,
+            gate_biases,
+            h_bias
+        ]
+
+        if aux is not None and 'ff_aux' in aux.keys():
+            if 'swap_memory' in aux['ff_aux']:
+                swap_memory = aux['ff_aux']['swap_memory']
+        else:
+            swap_memory = True
+        returned = tf.while_loop(
+            gru_condition,
+            gru_body,
+            loop_vars=elems,
+            back_prop=True,
+            swap_memory=swap_memory)
+
+        # Prepare output
+        _, _, _, h_updated, _, _, _, _, _, _ = returned
+        return self, h_updated
+
+
 def sgru2d_layer(
         self,
         bottom,
