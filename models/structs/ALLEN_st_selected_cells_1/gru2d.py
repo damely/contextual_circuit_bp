@@ -2,8 +2,8 @@
 
 layer_structure = [
     {
-        'layers': ['sgru2d'],
-        'weights': [32],
+        'layers': ['gru2d'],
+        'weights': [96],
         'names': ['conv1_1'],
         'filter_size': [11],
         'activation': ['selu'],

@@ -190,13 +190,14 @@ class experiments():
             'model_struct': [
                 os.path.join(model_folder, 'complete_sep_conv3d'),
                 os.path.join(model_folder, 'time_sep_conv3d'),
-                os.path.join(model_folder, 'complete_sep_nl_conv3d'),
-                os.path.join(model_folder, 'time_sep_nl_conv3d'),
-                os.path.join(model_folder, 'conv3d'),
-                os.path.join(model_folder, 'lstm2d'),
+                # os.path.join(model_folder, 'complete_sep_nl_conv3d'),
+                # os.path.join(model_folder, 'time_sep_nl_conv3d'),
+                # os.path.join(model_folder, 'conv3d'),
+                # os.path.join(model_folder, 'lstm2d'),
                 os.path.join(model_folder, 'gru2d'),
-                os.path.join(model_folder, 'rnn2d'),
-                os.path.join(model_folder, 'sgru2d')
+                # os.path.join(model_folder, 'rnn2d'),
+                os.path.join(model_folder, 'sgru2d'),
+                os.path.join(model_folder, 'alexnet_sgru2d')
             ],
             'dataset': ['ALLEN_selected_cells_1']
         }

@@ -1,4 +1,4 @@
-FROM serrep3.services.brown.edu:5000/tensorflow
+FROM tensorflow/tensorflow:1.4.1-gpu
 
 MAINTAINER Ben Navetta <benjamin_navetta@brown.edu>
 

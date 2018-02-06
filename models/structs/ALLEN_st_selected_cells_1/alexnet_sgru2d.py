@@ -2,10 +2,15 @@
 
 layer_structure = [
     {
-        'layers': ['sgru2d'],
-        'weights': [32],
-        'names': ['conv1_1'],
+        'layers': ['alexnet_sgru2d'],
+        'weights': [96],
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',
+        'alexnet_layer': 'conv1',
+        'trainable': True,
+        'init_bias': True,
+        'cam_mask': False,
         'filter_size': [11],
+        'names': ['sepgru2d1'],
         'activation': ['selu'],
         'activation_target': ['post'],
     },
