@@ -154,6 +154,13 @@ class ContextualCircuit(object):
             for k, v in kwargs.iteritems():
                 setattr(self, k, v)
 
+    def symmetric_weights(self, w, name):
+        """Apply symmetric weight sharing."""
+        conv_w_t = tf.transpose(w, (2, 3, 0, 1))
+        conv_w_symm = 0.5 * (conv_w_t + tf.transpose(conv_w_t, (1, 0, 2, 3)))
+        conv_w = tf.transpose(conv_w_symm, (2, 3, 0, 1), name=name)
+        return conv_w
+
     def prepare_tensors(self):
         """ Prepare recurrent/forward weight matrices."""
         self.weight_dict = {  # Weights lower/activity upper
@@ -662,11 +669,18 @@ class ContextualCircuit(object):
             )
         else:
             P = self.conv_2d_op(
-                data=self.apply_tuning(I, 'P'),
+                data=self.apply_tuning(
+                    data=I,
+                    wm='P',
+                    nl=self.post_tuning_nl),
                 weight_key=self.weight_dict['P']['r']['weight']
             )
+
         Q = self.conv_2d_op(
-            data=self.apply_tuning(I, 'Q'),
+            data=self.apply_tuning(
+                data=I,
+                wm='Q',
+                nl=self.post_tuning_nl),
             weight_key=self.weight_dict['Q']['r']['weight']
         )
         O_update_input = self.conv_2d_op(
