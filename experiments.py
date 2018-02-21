@@ -26,8 +26,8 @@ class experiments():
             'epochs': 200,
             'shuffle_train': True,  # Shuffle train data.
             'shuffle_val': False,  # Shuffle val data.
-            'save_validation_predictions': False,  # Save a numpy of preds/labels
-            'pr_curve': False,  # Precision recall curve in tensorboard
+            'save_validation_predictions': False,  # Save npy of preds/labels.
+            'pr_curve': False,  # Precision recall curve in tensorboard.
             'loss_weights': None,  # Weight your loss w/ a dictionary.
             'validation_iters': 5000,  # How often to evaluate validation.
             'num_validation_evals': 100,  # How many validation batches.
@@ -35,7 +35,8 @@ class experiments():
             'early_stop': False,  # Stop training if the loss stops improving.
             'save_weights': False,  # Save model weights on validation evals.
             'optimizer_constraints': None,  # A {var name: bound} dictionary.
-            'resize_output': None  # Postproc resize of the output (FC models).
+            'resize_output': None,  # Postproc resize the output (FC models).
+            'dataloader_override': False  # Dataloader output overrides model.
         }
 
     def add_globals(self, exp):
@@ -209,6 +210,7 @@ class experiments():
         exp['num_validation_evals'] = 225
         exp['batch_size'] = 10  # Train/val batch size.
         exp['save_weights'] = True
+        exp['dataloader_override'] = True
         return exp
 
     def crcns_1d_one_loss(self):
@@ -388,3 +390,35 @@ class experiments():
         exp['pr_curve'] = True
         exp['save_validation_predictions'] = True
         return exp
+
+
+    def MULTIALLEN_VISamGONLsmubfDChuXuN(self):
+        """MULTIALLEN_VISamGONLsmubfDChuXuN ST multi-experiment creation."""
+        model_folder = 'MULTIALLEN_VISamGONLsmubfDChuXuN'
+        exp = {
+            'experiment_name': ['MULTIALLEN_VISamGONLsmubfDChuXuN'],
+            'lr': [3e-4],
+            'loss_function': ['pearson'],
+            'optimizer': ['adam'],
+            'model_struct': [
+                # os.path.join(model_folder, 'complete_sep_conv3d'),
+                # os.path.join(model_folder, 'time_sep_conv3d'),
+                os.path.join(model_folder, 'gru2d'),
+                os.path.join(model_folder, 'alexnet_gru2d'),
+                os.path.join(model_folder, 'sgru2d'),
+                os.path.join(model_folder, 'alexnet_sgru2d')
+            ],
+            'dataset': ['MULTIALLEN_VISamGONLsmubfDChuXuN']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['data_augmentations'] = [['resize']]
+        exp['epochs'] = 50
+        exp['validation_iters'] = 200  # Check validation every N steps of training
+        exp['num_validation_evals'] = 225  # Corresponds to a full movie
+        exp['batch_size'] = 10  # Train/val batch size.
+        # exp['normalize_labels'] = 'zscore'  # Not currently implemented
+        exp['save_weights'] = True
+        exp['dataloader_override'] = True
+        exp['tensorboard_images'] = False
+        return exp
+

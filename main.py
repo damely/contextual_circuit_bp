@@ -223,32 +223,36 @@ def main(
         layer_structure=model_dict.layer_structure,
         exp_params=exp_params)
 
+    # Prepare variables for the models
+    if len(dataset_module.output_size) == 2:
+        log.warning(
+            'Found > 1 dimension for your output size.'
+            'Converting to a scalar.')
+        dataset_module.output_size = np.prod(
+            dataset_module.output_size)
+
+    if hasattr(model_dict, 'output_structure'):
+        # Use specified output layer
+        output_structure = model_dict.output_structure
+    else:
+        output_structure = None
+
+    # Correct number of output neurons if needed
+    if config.dataloader_override and\
+            'weights' in output_structure[-1].keys():
+        output_neurons = output_structure[-1]['weights'][0]
+        size_check = output_neurons != dataset_module.output_size
+        fc_check = output_structure[-1]['layers'][0] == 'fc'
+        if size_check and fc_check:
+            output_structure[-1]['weights'][0] = dataset_module.output_size
+            log.warning('Adjusted output neurons from %s to %s.' % (
+                output_neurons,
+                dataset_module.output_size))
+
     # Prepare model on GPU
     with tf.device(gpu_device):
         with tf.variable_scope('cnn') as scope:
-            # Normalize labels if needed
-            if 'normalize_labels' in exp_params.keys():
-                if exp_params['normalize_labels'] == 'zscore':
-                    train_labels -= train_means_label['mean']
-                    train_labels /= train_means_label['std']
-                    log.info('Z-scoring labels.')
-                elif exp_params['normalize_labels'] == 'mean':
-                    train_labels -= train_means_label['mean']
-                    log.info('Mean-centering labels.')
-
             # Training model
-            if len(dataset_module.output_size) == 2:
-                log.warning(
-                    'Found > 1 dimension for your output size.'
-                    'Converting to a scalar.')
-                dataset_module.output_size = np.prod(
-                    dataset_module.output_size)
-
-            if hasattr(model_dict, 'output_structure'):
-                # Use specified output layer
-                output_structure = model_dict.output_structure
-            else:
-                output_structure = None
             model = model_utils.model_class(
                 mean=train_means_image,
                 training=True,
@@ -264,6 +268,16 @@ def main(
                 json.dumps(model_summary, indent=4),
                 verbose=0)
             print_model_architecture(model_summary)
+
+            # Normalize labels on GPU if needed
+            if 'normalize_labels' in exp_params.keys():
+                if exp_params['normalize_labels'] == 'zscore':
+                    train_labels -= train_means_label['mean']
+                    train_labels /= train_means_label['std']
+                    log.info('Z-scoring labels.')
+                elif exp_params['normalize_labels'] == 'mean':
+                    train_labels -= train_means_label['mean']
+                    log.info('Mean-centering labels.')
 
             # Check the shapes of labels and scores
             if not isinstance(train_scores, list):
@@ -324,18 +338,19 @@ def main(
                     train_aux[m] = eval_metrics.metric_interpreter(
                         metric=m,
                         pred=train_scores,
-                        labels=train_labels)[0]  # TODO: Fix for multiloss
+                        labels=train_labels)  # [0]  # TODO: Fix for multiloss
 
             # Prepare remaining tensorboard summaries
-            if len(train_images.get_shape()) == 4:
-                tf_fun.image_summaries(train_images, tag='Training images')
-            if len(train_labels.get_shape()) > 2:
-                tf_fun.image_summaries(
-                    train_labels,
-                    tag='Training_targets')
-                tf_fun.image_summaries(
-                    train_scores,
-                    tag='Training_predictions')
+            if config.tensorboard_images:
+                if len(train_images.get_shape()) == 4:
+                    tf_fun.image_summaries(train_images, tag='Training images')
+                if len(train_labels.get_shape()) > 2:
+                    tf_fun.image_summaries(
+                        train_labels,
+                        tag='Training_targets')
+                    tf_fun.image_summaries(
+                        train_scores,
+                        tag='Training_predictions')
             if isinstance(train_accuracy, list):
                 for tidx, ta in enumerate(train_accuracy):
                     tf.summary.scalar('training_accuracy_%s' % tidx, ta)
@@ -421,18 +436,21 @@ def main(
                     val_aux[m] = eval_metrics.metric_interpreter(
                         metric=m,
                         pred=val_scores,
-                        labels=val_labels)[0]  # TODO: Fix for multiloss
+                        labels=val_labels)  # [0]  # TODO: Fix for multiloss
 
             # Prepare tensorboard summaries
-            if len(val_images.get_shape()) == 4:
-                tf_fun.image_summaries(val_images, tag='Validation')
-            if len(val_labels.get_shape()) > 2:
-                tf_fun.image_summaries(
-                    val_labels,
-                    tag='Validation_targets')
-                tf_fun.image_summaries(
-                    val_scores,
-                    tag='Validation_predictions')
+            if config.tensorboard_images:
+                if len(val_images.get_shape()) == 4:
+                    tf_fun.image_summaries(
+                        val_images,
+                        tag='Validation')
+                if len(val_labels.get_shape()) > 2:
+                    tf_fun.image_summaries(
+                        val_labels,
+                        tag='Validation_targets')
+                    tf_fun.image_summaries(
+                        val_scores,
+                        tag='Validation_predictions')
             if isinstance(val_accuracy, list):
                 for vidx, va in enumerate(val_accuracy):
                     tf.summary.scalar('validation_accuracy_%s' % vidx, va)

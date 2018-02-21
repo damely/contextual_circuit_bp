@@ -18,7 +18,7 @@ class data_processing(object):
         self.model_input_image_size = [self.timepoints, 1]
         self.default_loss_function = 'sigmoid_logits'
         self.score_metric = 'argmax_softmax_accuracy'
-        self.fix_imbalance_train = True
+        self.fix_imbalance_train = False  # True
         self.fix_imbalance_test = False
         self.preprocess = [None]
         self.train_prop = 0.80
@@ -26,11 +26,11 @@ class data_processing(object):
         self.df_f_window = 10
         self.use_df_f = False
         self.save_pickle = True
-        self.shuffle_train = True
+        self.shuffle_train = False  # True
         self.shuffle_test = False
         self.pickle_name = 'cell_3_dff.p'
         self.overwrite_numpy = False
-        self.validation_slice = 2
+        self.validation_slice = 0  # 2
 
         # CRCNS data pointers
         self.crcns_dataset = os.path.join(
@@ -393,6 +393,7 @@ class data_processing(object):
         num_events = int(num_images / self.timepoints)
         total_events = num_events * self.timepoints
         cat_images = cat_images[:total_events]
+        full_cat_images = cat_images.reshape(-1, 1)
         full_cat_labels = cat_labels[:total_events]
         cat_images = cat_images.reshape(num_events, -1)
         cat_labels = full_cat_labels.reshape(num_events, -1)
@@ -417,22 +418,30 @@ class data_processing(object):
         # Cross validate with a proportion of images from each session
         train_images, train_labels, train_ids = [], [], []
         test_images, test_labels, test_ids = [], [], []
-        raw_test_labels, raw_train_labels = [], []
+        raw_train_images, raw_test_images, raw_test_labels, raw_train_labels = [], [], [], []
         for cid in np.unique(cat_ids):
             cidx = (cat_ids == cid).squeeze()
+            fcidx = (full_cat_ids == cid).squeeze()
             cell_ims = cat_images[cidx]
             cell_labels = cat_labels[cidx]
             cell_ids = cat_ids[cidx]
             cell_raw = raw_labels[cidx]
             cv_split = np.round(cidx.sum() * self.train_prop).astype(int)
+            fcv_split = np.round(fcidx.sum() * self.train_prop).astype(int)
             train_images += [cell_ims[:cv_split]]
             train_labels += [cell_labels[:cv_split]]
             train_ids += [cell_ids[:cv_split]]
             test_images += [cell_ims[cv_split:]]
             test_labels += [cell_labels[cv_split:]]
             test_ids += [cell_ids[cv_split:]]
-            raw_train_labels += [cell_raw[:cv_split]]
-            raw_test_labels += [cell_raw[cv_split:]]
+
+            fcv_split = np.round(fcidx.sum() * self.train_prop).astype(int)
+            cell_ims = full_cat_images[fcidx]
+            cell_labels = full_cat_labels[fcidx]
+            raw_train_images += [cell_ims[:fcv_split]]
+            raw_test_images += [cell_ims[fcv_split:]]
+            raw_train_labels += [cell_labels[:fcv_split]]
+            raw_test_labels += [cell_labels[fcv_split:]]
 
         train_images = np.concatenate(train_images)
         train_labels = np.concatenate(train_labels)
@@ -442,6 +451,8 @@ class data_processing(object):
         test_ids = np.concatenate(test_ids)
         raw_train_labels = np.concatenate(raw_train_labels)
         raw_test_labels = np.concatenate(raw_test_labels)
+        raw_train_images = np.concatenate(raw_train_images)
+        raw_test_images = np.concatenate(raw_test_images)
 
         # cv_split = np.round(num_events * self.train_prop).astype(int)
         # full_cv_split = np.round(
@@ -451,103 +462,14 @@ class data_processing(object):
         # train_labels = cat_labels[:cv_split]
         # test_labels = cat_labels[cv_split:]
 
-        # Fix imbalance with repetitions if requested
-        if self.fix_imbalance_train:
-            spike_idx = train_labels[:, 0] > 0
-            num_spikes = spike_idx.sum()
-            num_events = len(train_labels)
-            num_neg = num_events - num_spikes
-            rep = int(num_neg / num_spikes)
-            spike_images = train_images[spike_idx.squeeze()]
-            rep_spike_images = spike_images.repeat(rep, axis=0)
-            rep_spike_labels = train_labels[spike_idx].repeat(rep, axis=0)
-            rep_raw_spike_labels = raw_train_labels[spike_idx].repeat(
-                rep, axis=0)
-            train_images = np.concatenate(
-                (train_images, rep_spike_images), axis=0)
-            train_labels = np.concatenate(
-                (train_labels, rep_spike_labels), axis=0)
-            raw_train_labels = np.concatenate(
-                (raw_train_labels, rep_raw_spike_labels), axis=0)
-
-        if self.fix_imbalance_test:
-            spike_idx = test_labels[:, 0] > 0
-            num_spikes = spike_idx.sum()
-            num_events = len(test_labels)
-            num_neg = num_events - num_spikes
-            rep = int(num_neg / num_spikes)
-            spike_images = test_images[spike_idx.squeeze()]
-            rep_spike_images = spike_images.repeat(rep, axis=0)
-            rep_spike_labels = test_labels[spike_idx].repeat(rep, axis=0)
-            rep_raw_spike_labels = raw_test_labels[spike_idx].repeat(
-                rep, axis=0)
-            test_images = np.concatenate(
-                (test_images, rep_spike_images), axis=0)
-            test_labels = np.concatenate(
-                (test_labels, rep_spike_labels), axis=0)
-            raw_test_labels = np.concatenate(
-                (raw_test_labels, rep_raw_spike_labels), axis=0)
-
-        if self.shuffle_train:
-            rand_order = np.random.permutation(len(train_images))
-            train_images = train_images[rand_order]
-            train_labels = train_labels[rand_order]
-
-        if self.shuffle_test:
-            rand_order = np.random.permutation(len(test_images))
-            test_images = test_images[rand_order]
-            test_labels = test_labels[rand_order]
-
-        if self.validation_slice > 0:
-            # Reshape test_images and test_labels
-            slice_test_images = test_images.reshape(-1, 1)
-            slice_test_labels = test_labels[:, 0].repeat(
-                self.timepoints, axis=-1).reshape(-1, 1)
-            # slice_test_labels = raw_test_labels.reshape(-1, 1)
-            slice_test_ids = test_labels[:, 1].repeat(
-                self.timepoints, axis=-1).reshape(-1, 1)
-            # slice_test_labels = full_cat_labels[full_cv_split:]
-            # slice_test_ids = full_cat_ids[full_cv_split:]
-
-            # Stagger into events separated by self.validation_slice
-            num_staggered_events = len(
-                slice_test_images)
-            num_zeros = num_staggered_events / self.validation_slice
-            staggered_test_images = np.zeros((
-                num_zeros, self.timepoints))
-            staggered_test_labels = np.zeros((
-                num_zeros, 1))
-            staggered_test_ids = np.zeros((
-                num_zeros, 1))
-            start = 0
-            for idx in range(num_staggered_events):
-                end = start + self.timepoints
-                if end > num_staggered_events:
-                    break
-                else:
-                    staggered_test_images[idx] = slice_test_images[
-                        start:end].squeeze()
-                    staggered_test_labels[idx] = slice_test_labels[
-                        start:end].sum()
-                    staggered_test_ids[idx] = slice_test_ids[start]
-                start += self.validation_slice
-
-            dfs = staggered_test_images.sum(-1) != 0.
-            test_images = np.expand_dims(staggered_test_images[dfs], axis=-1)
-            test_labels = np.concatenate((
-                staggered_test_labels[dfs],
-                staggered_test_ids[dfs]), axis=-1).astype(np.int64)
-
         # Save a separate pickle if requested
         if self.save_pickle:
             data = [
                 {
-                    'calcium': train_images.squeeze().tolist(),
-                    'labels': train_labels,
-                    'raw_train_labels': raw_train_labels,
-                    'test_calcium': test_images.squeeze().tolist(),
-                    'test_labels': test_labels,
-                    'raw_test_labels': raw_test_labels,
+                    'calcium': raw_train_images,
+                    'labels': raw_train_labels,
+                    'test_calcium': raw_test_images,
+                    'test_labels': raw_test_labels,
                     'fps': 60.
                 }
             ]

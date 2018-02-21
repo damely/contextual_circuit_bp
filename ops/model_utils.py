@@ -109,18 +109,6 @@ class model_class(object):
             assert self.output_size is not None, 'Give model an output shape.'
             output_structure = self.default_output_layer()
 
-        # Correct output neurons if needed
-        if 'weights' in output_structure[-1].keys():
-            pass
-            # output_neurons = output_structure[-1]['weights'][0]
-            # size_check = output_neurons != self.output_size
-            # fc_check = output_structure[-1]['layers'][0] == 'fc'
-            # if size_check and fc_check:
-            #     # output_structure[-1]['weights'][0] = self.output_size  # KILL
-            #     log.warning('Adjusted output neurons from %s to %s.' % (
-            #         output_neurons,
-            #         self.output_size))
-
         # Calculate output effective receptive fields
         if tower_eRFs is not None:
             output_eRFs = eRF.calculate(
