@@ -485,7 +485,10 @@ def inputs(
         # Shuffle the examples and collect them into batch_size batches.
         # (Internally uses a RandomShuffleQueue.)
         # We run this in two threads to avoid being a bottleneck.
-        batch_data = [tf.concat(image_data, axis=0), tf.concat(label_data, axis=0)]
+        batch_data = [
+            tf.concat(image_data, axis=0),
+            tf.concat(label_data, axis=0)
+        ]
         if shuffle:
             images, labels = tf.train.shuffle_batch(
                 batch_data,
