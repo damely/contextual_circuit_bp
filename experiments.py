@@ -392,11 +392,11 @@ class experiments():
         return exp
 
 
-    def MULTIALLEN_VISamGONLsmubfDChuXuN(self):
-        """MULTIALLEN_VISamGONLsmubfDChuXuN ST multi-experiment creation."""
-        model_folder = 'MULTIALLEN_VISamGONLsmubfDChuXuN'
+    def MULTIALLEN_VISpvmvqmttlENqiDiSS(self):
+        """MULTIALLEN_VISpvmvqmttlENqiDiSS ST multi-experiment creation."""
+        model_folder = 'MULTIALLEN_VISpvmvqmttlENqiDiSS'
         exp = {
-            'experiment_name': ['MULTIALLEN_VISamGONLsmubfDChuXuN'],
+            'experiment_name': ['MULTIALLEN_VISpvmvqmttlENqiDiSS'],
             'lr': [3e-4],
             'loss_function': ['pearson'],
             'optimizer': ['adam'],
@@ -408,11 +408,11 @@ class experiments():
                 os.path.join(model_folder, 'sgru2d'),
                 os.path.join(model_folder, 'alexnet_sgru2d')
             ],
-            'dataset': ['MULTIALLEN_VISamGONLsmubfDChuXuN']
+            'dataset': ['MULTIALLEN_VISpvmvqmttlENqiDiSS']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [['resize']]
-        exp['epochs'] = 50
+        exp['epochs'] = 500
         exp['validation_iters'] = 200  # Check validation every N steps of training
         exp['num_validation_evals'] = 225  # Corresponds to a full movie
         exp['batch_size'] = 10  # Train/val batch size.

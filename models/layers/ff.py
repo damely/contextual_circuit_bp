@@ -84,6 +84,23 @@ class ff(object):
             name=name)
         return context, act
 
+    def dog_3d(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Add a temporal Difference of Gaussians layer."""
+        context, act = ff_fun.dog_3d_layer(
+            self=context,
+            bottom=act,
+            layer_weights=out_channels,
+            name=name)
+        return context, act
+
     def DoG(
             self,
             context,

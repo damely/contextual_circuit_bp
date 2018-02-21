@@ -581,6 +581,34 @@ def conv3d_layer(
         return self, bias
 
 
+def dog_3d_layer(
+        self,
+        bottom,
+        out_channels,
+        name,
+        in_channels=None,
+        filter_size=3,
+        stride=[1, 1, 1, 1, 1],
+        padding='SAME',
+        aux=None):
+    """DoG concatenated across time."""
+    batch_size, timesteps = int(bottom.get_shape()[:2])
+    activities = []
+    for idx in range(timesteps):
+        activities += [dog_layer(
+            self,
+            tf.squeeze(bottom[:, idx, :, :, :]),
+            layer_weights,
+            '%s_%s' % (name, idx),
+            init_weight=10.,
+            model_dtype=tf.float32)]
+    reshaped_activities = tf.reshape(
+        tf.transpose(
+            tf.stack(activities), [1, 0, 2]),
+        [batch_size, -1])
+    return reshaped_activities
+
+
 def st_resnet_layer(
         self,
         bottom,

@@ -486,7 +486,7 @@ def inputs(
         # (Internally uses a RandomShuffleQueue.)
         # We run this in two threads to avoid being a bottleneck.
         batch_data = [
-            tf.concat(image_data, axis=0),
+            tf.concat(image_data, axis=0),  # CHANGE TO STACK
             tf.concat(label_data, axis=0)
         ]
         if shuffle:
