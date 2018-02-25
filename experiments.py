@@ -36,7 +36,8 @@ class experiments():
             'save_weights': False,  # Save model weights on validation evals.
             'optimizer_constraints': None,  # A {var name: bound} dictionary.
             'resize_output': None,  # Postproc resize the output (FC models).
-            'dataloader_override': False  # Dataloader output overrides model.
+            'dataloader_override': False,  # Dataloader output overrides model.
+            'tensorboard_images': True
         }
 
     def add_globals(self, exp):
@@ -108,40 +109,27 @@ class experiments():
         model_folder = 'contours'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [3e-4],
+            'lr': [1e-3],
             'loss_function': ['pearson'],
-            'optimizer': ['adam'],
+            'optimizer': ['nadam'],
             # 'q_t': [1e-3, 1e-1],
             # 'p_t': [1e-2, 1e-1, 1],
             # 't_t': [1e-2, 1e-1, 1],
             'timesteps': [3],
             'model_struct': [
-                # os.path.join(
-                #     model_folder, 'context_conv2d'),
                 os.path.join(
-                    model_folder, 'context_association_conv2d'),
-                # os.path.join(
-                #     model_folder, 'context_association_l1_conv2d'),
+                    model_folder, 'context_association_single_conv2d'),
                 # os.path.join(
                 #     model_folder, 'context_association_full_full_conv2d'),
                 # os.path.join(
-                #     model_folder, 'context_association_full_hole_conv2d'),
-                # os.path.join(
-                #     model_folder, 'context_association_crf_hole_conv2d'),
-                os.path.join(
-                    model_folder, 'context_association_l1_full_full_conv2d'),
-                # os.path.join(
-                #     model_folder, 'context_association_l1_full_hole_conv2d'),
-                # os.path.join(
-                #     model_folder, 'context_association_l1_crf_hole_conv2d'),
-                os.path.join(
-                    model_folder, 'conv2d'),
+                #     model_folder, 'conv2d'),
             ],
-            'dataset': ['BSDS500']
+            'dataset': ['BSDS500_2']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
-            'random_crop_image_label',
+            'resize_nn_image_label'
+            # 'random_crop_image_label',
             # 'lr_flip_image_label',
             # 'ud_flip_image_label'
             ]]
@@ -151,7 +139,7 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        exp['resize_output'] = [[150, 240]]
+        exp['resize_output'] = [[128, 128]]  # [[150, 240]]
         return exp
 
     def ALLEN_random_cells_103(self):

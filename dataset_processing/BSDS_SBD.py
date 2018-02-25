@@ -23,7 +23,7 @@ class data_processing(object):
         self.config = Config()
         self.im_size = [321, 481, 3]
         self.sum_imgs = np.zeros(self.im_size)
-        self.lab_size = (321,481) #Opposite to convention, opencv standards
+        self.lab_size = (321, 481)  #O pposite to convention, opencv standards
         self.model_input_image_size = [321, 481, 3] #[150, 240, 3]  # [107, 160, 3]
         self.output_size = [321, 481, 1]
         self.label_size = self.output_size

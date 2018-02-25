@@ -141,6 +141,7 @@ def peakdet(v, delta, x = None):
 
     return array(maxtab), array(mintab)
 
+
 def save_mosaic(
         maps,
         output,

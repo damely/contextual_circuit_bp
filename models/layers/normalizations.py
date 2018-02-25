@@ -5,8 +5,8 @@ from ops.eRF_calculator import eRF_calculator
 from models.layers.normalization_functions import div_norm
 from models.layers.normalization_functions import layer_norm
 from models.layers.normalization_functions import contextual
-from models.layers.normalization_functions import contextual_ff
-
+from models.layers.normalization_functions import contextual_single_ecrf
+from models.layers.normalization_functions import contextual_single_cs
 
 class normalizations(object):
     """Wrapper class for activation functions."""
@@ -45,9 +45,9 @@ class normalizations(object):
             SSF=None,
             V1_CRF=0.26,
             V1_neCRF=0.54,
-            V1_feCRF=1.41,
+            V1_feCRF=1.,  # 1.41,
             default_stride=1,
-            rf_calculation='pixel_wise',
+            rf_calculation='fit_rf',  # 'pixel_wise',
             padding=1):
         """Set RF sizes for the normalizations.
 
@@ -152,11 +152,26 @@ class normalizations(object):
             aux=aux)
         return contextual_layer.build()
 
-    def contextual_ff(self, x, layer, eRF, aux):
+    def contextual_single_ecrf(self, x, layer, eRF, aux):
         """Contextual model from paper with frozen U & eCRFs."""
         self.update_params(aux)
         self.set_RFs(layer=layer, eRF=eRF)
-        contextual_layer = contextual_ff.ContextualCircuit(
+        contextual_layer = contextual_single_ecrf.ContextualCircuit(
+            X=x,
+            timesteps=self.timesteps,
+            SRF=self.SRF,
+            SSN=self.SSN,
+            SSF=self.SSF,
+            strides=self.strides,
+            padding=self.padding,
+            aux=aux)
+        return contextual_layer.build()
+
+    def contextual_single_cs(self, x, layer, eRF, aux):
+        """Contextual model fully learnable."""
+        self.update_params(aux)
+        self.set_RFs(layer=layer, eRF=eRF)
+        contextual_layer = contextual_single_cs.ContextualCircuit(
             X=x,
             timesteps=self.timesteps,
             SRF=self.SRF,

@@ -7,40 +7,43 @@ from tensorflow.python.ops import array_ops
 from tensorflow.python.ops import nn_ops
 
 
-@tf.RegisterGradient("SymmetricConv")
-def _Conv2DGrad(op, grad):
-    """Weight sharing for symmetric lateral connections."""
-    strides = op.get_attr("strides")
-    padding = op.get_attr("padding")
-    use_cudnn_on_gpu = op.get_attr("use_cudnn_on_gpu")
-    data_format = op.get_attr("data_format")
-    shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
-    dx = nn_ops.conv2d_backprop_input(
-           shape_0,
-           op.inputs[1],
-           grad,
-           strides=strides,
-           padding=padding,
-           use_cudnn_on_gpu=use_cudnn_on_gpu,
-           data_format=data_format)
-    dw = nn_ops.conv2d_backprop_filter(
-           op.inputs[0],
-           shape_1,
-           grad,
-           strides=strides,
-           padding=padding,
-           use_cudnn_on_gpu=use_cudnn_on_gpu,
-           data_format=data_format)
-    dw_t = tf.transpose(
-        dw,
-        (2, 3, 0, 1))
-    dw_symm_t = (0.5) * (dw_t + tf.transpose(
-        dw_t,
-        (1, 0, 2, 3)))
-    dw_symm = tf.transpose(
-        dw_symm_t,
-        (2, 3, 0, 1))
-    return dx, dw_symm
+try:
+    @tf.RegisterGradient('SymmetricConv')
+    def _Conv2DGrad(op, grad):
+        """Weight sharing for symmetric lateral connections."""
+        strides = op.get_attr('strides')
+        padding = op.get_attr('padding')
+        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
+        data_format = op.get_attr('data_format')
+        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
+        dx = nn_ops.conv2d_backprop_input(
+               shape_0,
+               op.inputs[1],
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw = nn_ops.conv2d_backprop_filter(
+               op.inputs[0],
+               shape_1,
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw_t = tf.transpose(
+            dw,
+            (2, 3, 0, 1))
+        dw_symm_t = (0.5) * (dw_t + tf.transpose(
+            dw_t,
+            (1, 0, 2, 3)))
+        dw_symm = tf.transpose(
+            dw_symm_t,
+            (2, 3, 0, 1))
+        return dx, dw_symm
+except:
+    print 'Already imported SymmetricConv.'
 
 
 def auxilliary_variables():
@@ -54,18 +57,23 @@ def auxilliary_variables():
         'hidden_init': 'random',
         'tuning_init': 'cov',  # TODO: Initialize tuning as input covariance
         'association_field': False,
-        'nonnegative_association': False,
         'tuning_nl': 'relu',
         'train': True,
         'dropout': None,
         'separable': False,  # Need C++ implementation.
-        'recurrent_nl': tf.nn.selu,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
+        'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
         'gate_nl': tf.nn.sigmoid,
         'normal_initializer': False,
         'symmetric_weights': True,  # Lateral weight sharing
         'gru_gates': False,  # True input reset gate vs. integration gate
         'post_tuning_nl': False,  # Apply nonlinearity to crf/ecrf activity
-        'gate_filter': 1  # Gate kernel size
+        'gate_filter': 1,  # Gate kernel size
+        'zeta': False,  # Scale I
+        'gamma': False,  # Scale P
+        'delta': False,  # Scale Q
+        'xi': False,  # Scale X
+        'multiplicative_excitation': True,
+        'rectify_weights': False  # +/- rectify weights or activities
     }
 
 
@@ -114,6 +122,7 @@ class ContextualCircuit(object):
 
         # Kernel shapes
         self.SRF, self.SSN, self.SSF = SRF, SSN, SSF
+        self.SSN_ext = 2 * py_utils.ifloor(SSN / 2.0) + 1
         self.SSF_ext = 2 * py_utils.ifloor(SSF / 2.0) + 1
         if self.SSN is None:
             self.SSN = self.SRF * 3
@@ -132,7 +141,7 @@ class ContextualCircuit(object):
         self.bias_shape = [1, 1, 1, self.k]
 
         if self.association_field:
-            self.p_shape = [self.SSN_ext, self.SSN_ext, self.k, self.k]
+            self.p_shape = [self.SSF_ext, self.SSF_ext, self.k, self.k]
         self.tuning_params = ['Q', 'P']  # Learned connectivity
         self.tuning_shape = [1, 1, self.k, self.k]
 
@@ -429,23 +438,48 @@ class ContextualCircuit(object):
         # Vector weights
         w_array = np.ones([1, 1, 1, self.k]).astype(np.float32)
         b_array = np.zeros([1, 1, 1, self.k]).astype(np.float32)
-        self.xi = tf.get_variable(name='xi', initializer=w_array)
+
+        # Divisive params
         self.alpha = tf.get_variable(name='alpha', initializer=w_array)
         self.beta = tf.get_variable(name='beta', initializer=w_array)
+
+        # Subtractive params
         self.mu = tf.get_variable(name='mu', initializer=b_array)
         self.nu = tf.get_variable(name='nu', initializer=b_array)
-        self.zeta = tf.get_variable(name='zeta', initializer=w_array)
-        self.gamma = tf.get_variable(name='gamma', initializer=w_array)
-        self.delta = tf.get_variable(name='delta', initializer=w_array)
+        if self.zeta:
+            self.zeta = tf.get_variable(name='zeta', initializer=w_array)
+        else:
+            self.zeta = tf.constant(1.)
+        if self.gamma:
+            self.gamma = tf.get_variable(name='gamma', initializer=w_array)
+        else:
+            self.gamma = tf.constant(1.)
+        if self.delta:
+            self.delta = tf.get_variable(name='delta', initializer=w_array)
+        else:
+            self.delta = tf.constant(1.)
+        if self.xi:
+            self.xi = tf.get_variable(name='xi', initializer=w_array)
+        else:
+            self.xi = tf.constant(1.)
 
-    def conv_2d_op(self, data, weight_key, out_key=None, weights=None):
+    def conv_2d_op(
+            self,
+            data,
+            weight_key,
+            out_key=None,
+            weights=None,
+            symmetric_weights=False,
+            rectify=None):
         """2D convolutions, lesion, return or assign activity as attribute."""
         if weights is None:
             weights = self[weight_key]
+        if rectify is not None:
+            weights = rectify(weights, 0)
         w_shape = [int(w) for w in weights.get_shape()]
         if len(w_shape) > 1 and int(w_shape[-2]) > 1:
             # Full convolutions
-            if self.symmetric_weights:
+            if symmetric_weights:
                 g = tf.get_default_graph()
                 with g.gradient_override_map({'Conv2D': 'SymmetricConv'}):
                     activities = tf.nn.conv2d(
@@ -493,7 +527,7 @@ class ContextualCircuit(object):
                 out_key,
                 activities)
 
-    def apply_tuning(self, data, wm, nl=False):
+    def apply_tuning(self, data, wm, nl=False, rectify=None):
         """Wrapper for applying weight wm to data."""
         for k in self.tuning_params:
             if wm == k:
@@ -502,13 +536,13 @@ class ContextualCircuit(object):
                     with g.gradient_override_map({'Conv2D': 'SymmetricConv'}):
                         data = self.conv_2d_op(
                             data=data,
-                            weight_key=self.weight_dict[wm]['r']['tuning']
-                            )
+                            weight_key=self.weight_dict[wm]['r']['tuning'],
+                            rectify=rectify)
                 else:
                     data = self.conv_2d_op(
                         data=data,
-                        weight_key=self.weight_dict[wm]['r']['tuning']
-                        )
+                        weight_key=self.weight_dict[wm]['r']['tuning'],
+                        rectify=rectify)
                 if nl:
                     return self.tuning_nl(data)
                 else:
@@ -538,26 +572,28 @@ class ContextualCircuit(object):
         # Circuit input
         if self.association_field:
             # Ensure that CRF for association field is masked
-            p_weights = self.association_mask * self[
+            p_weights = self[
                 self.weight_dict['P']['r']['weight']]
-            if self.nonnegative_association:
-                p_weights = tf.nn.relu(p_weights)  # Force excitatory conns
+            if self.rectify_weights:
+                p_weights = tf.minimum(p_weights, 0)
             P = self.conv_2d_op(
                 data=I,
                 weight_key=self.weight_dict['P']['r']['weight'],
-                weights=p_weights
-            )
+                weights=p_weights,
+                symmetric_weights=True)
         else:
             P = self.conv_2d_op(
                 data=self.apply_tuning(
                     data=I,
                     wm='P',
-                    nl=self.post_tuning_nl),
+                    nl=self.post_tuning_nl,
+                    rectify=tf.minimum),
                 weight_key=self.weight_dict['P']['r']['weight']
             )
 
         # P inhibition on input
-        P = tf.minimum(P, 0)
+        if not self.rectify_weights:
+            P = tf.minimum(P, 0)
 
         # CRF inhibitiion
         U = self.conv_2d_op(
@@ -602,26 +638,28 @@ class ContextualCircuit(object):
         # Circuit output
         if self.association_field:
             # Ensure that CRF for association field is masked
-            p_weights = self.association_mask * self[
+            p_weights = self[
                 self.weight_dict['P']['r']['weight']]
-            if self.nonnegative_association:
-                p_weights = tf.nn.relu(p_weights)  # Force excitatory conns
+            if self.rectify_weights:
+                p_weights = tf.maximum(p_weights, 0)
             P = self.conv_2d_op(
                 data=I,
                 weight_key=self.weight_dict['P']['r']['weight'],
-                weights=p_weights
-            )
+                weights=p_weights,
+                symmetric_weights=True)
         else:
             P = self.conv_2d_op(
                 data=self.apply_tuning(
                     data=I,
                     wm='P',
-                    nl=self.post_tuning_nl),
+                    nl=self.post_tuning_nl,
+                    rectify=tf.maximum),
                 weight_key=self.weight_dict['P']['r']['weight']
             )
 
         # P excitation on output
-        P = tf.maximum(P, 0)
+        if not self.rectify_weights:
+            P = tf.maximum(P, 0)
 
         # CRF excitation
         Q = self.conv_2d_op(
@@ -650,10 +688,12 @@ class ContextualCircuit(object):
         elif not self.train and self.dropout is not None:
             O_update = (1 / self.dropout) * self.gate_nl(
                 O_update_input + O_update_recurrent)
-        O_summand = self.recurrent_nl(
-            self.zeta * I
-            + self.gamma * P
-            + self.delta * Q)
+        if self.multiplicative_excitation:
+            O_summand = self.recurrent_nl(
+                self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
+        else:
+            O_summand = self.recurrent_nl(
+                self.zeta * I + self.gamma * P + self.delta * Q)
         O = (O_update * O) + ((1 - O_update) * O_summand)
         i0 += 1  # Iterate loop
         return i0, O, I
@@ -704,7 +744,6 @@ class ContextualCircuit(object):
                 O,
                 I
             ]
-
             returned = tf.while_loop(
                 self.condition,
                 self.full,

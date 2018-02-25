@@ -20,8 +20,8 @@ class data_processing(object):
         self.processed_images = 'processed_images'
         self.config = Config()
         self.im_size = [321, 481, 3]
-        self.model_input_image_size = [150, 240, 3]  # [107, 160, 3]
-        self.output_size = [321, 481, 1]
+        self.model_input_image_size = [128, 128, 3]  # [150, 240, 3]
+        self.output_size = [321, 481, 1]  # 256 x 256 pixels, 7 x 7 angle
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
         self.score_metric = 'pearson'
@@ -45,7 +45,7 @@ class data_processing(object):
         }
         self.tf_reader = {
             'image': {
-                'dtype': tf.float32,
+                'dtype': tf.float64,
                 'reshape': self.im_size
             },
             'label': {
@@ -57,6 +57,7 @@ class data_processing(object):
     def get_data(self):
         files = self.get_files()
         labels, files = self.get_labels(files)
+
         return files, labels
 
     def get_files(self):
@@ -134,6 +135,7 @@ class data_processing(object):
 
                         # Process images
                         proc_im = os.path.join(proc_image_dir, it_im_name)
+                        #misc.imsave(proc_im, im_data)
                         all_images.append(im_data)
                         file_vec += [proc_im]
                 elif self.fold_options[k] == 'mean':
@@ -153,6 +155,7 @@ class data_processing(object):
 
                     # Process images
                     proc_im = os.path.join(proc_image_dir, it_label)
+                    #misc.imsave(proc_im, im_data)
                     file_vec += [proc_im]
                 else:
                     raise NotImplementedError
@@ -166,16 +169,12 @@ class data_processing(object):
             # Alternatively, save with scikit-image
             all_images = np.array(all_images)
             if k == 'train':
-                ims_r, ims_g, ims_b = np.split(all_images, 3, axis=-1)
-                mu_r, mu_g, mu_b = ims_r.mean(), ims_g.mean(), ims_b.mean()
-                sd_r, sd_g, sd_b = ims_r.std(), ims_g.std(), ims_b.std()
-                mean_rgb_train = np.asarray(
-                    [mu_r, mu_g, mu_b])[None, None, None, :]
-                std_rgb_train = np.asarray(
-                    [sd_r, sd_g, sd_b])[None, None, None, :]
+                mean_rgb_train = all_images.mean(0,keepdims=True).mean(1,keepdims=True).mean(2,keepdims=True)
+                std_rgb_train = all_images.std()
             all_images_z = (all_images - mean_rgb_train)/std_rgb_train
-            for i, img in enumerate(all_images_z):
-                np.save('%s.npy' % file_vec[i], img)
+
+            for i,img in enumerate(all_images_z):
+                np.save(file_vec[i] + '.npy',img.astype(np.float32))
             labels[k] = label_vec
-            new_files[k] = ['%s.npy' % i for i in file_vec]
+            new_files[k] = [i+'.npy' for i in file_vec]
         return labels, new_files
