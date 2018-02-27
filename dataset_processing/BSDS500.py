@@ -6,6 +6,7 @@ from config import Config
 from ops import tf_fun
 from utils import py_utils
 from scipy import io, misc
+from tqdm import tqdm
 
 
 class data_processing(object):
@@ -25,13 +26,14 @@ class data_processing(object):
         self.default_loss_function = 'pearson'
         self.score_metric = 'pearson'
         self.aux_scores = ['f1']
+        self.store_z = True
         self.preprocess = [None]  # ['resize_nn']
         self.folds = {
             'train': 'train',
             'val': 'val'
         }
         self.fold_options = {
-            'train': 'duplicate',
+            'train': 'mean',
             'val': 'mean'
         }
         self.targets = {
@@ -97,7 +99,7 @@ class data_processing(object):
                 fold,
                 self.processed_images)
             py_utils.make_dir(proc_image_dir)
-            for im in images:
+            for im in tqdm(images, total=len(images), desc=k):
                 it_label = im.split(os.path.sep)[-1]
                 it_label_path = '%s%s' % (im.split('.')[0], self.lab_extension)
                 it_label_path = it_label_path.replace(

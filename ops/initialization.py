@@ -22,7 +22,7 @@ import math
 
 from tensorflow.python.framework import dtypes
 from tensorflow.python.ops import random_ops
-from tensorflow.python.ops import init_ops
+
 
 __all__ = [
     'xavier_initializer',

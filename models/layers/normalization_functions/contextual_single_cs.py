@@ -3,49 +3,9 @@ import numpy as np
 import tensorflow as tf
 from utils import py_utils
 from ops import initialization
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import nn_ops
 
 
-try:
-    @tf.RegisterGradient('SymmetricConv')
-    def _Conv2DGrad(op, grad):
-        """Weight sharing for symmetric lateral connections."""
-        strides = op.get_attr('strides')
-        padding = op.get_attr('padding')
-        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
-        data_format = op.get_attr('data_format')
-        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
-        dx = nn_ops.conv2d_backprop_input(
-               shape_0,
-               op.inputs[1],
-               grad,
-               strides=strides,
-               padding=padding,
-               use_cudnn_on_gpu=use_cudnn_on_gpu,
-               data_format=data_format)
-        dw = nn_ops.conv2d_backprop_filter(
-               op.inputs[0],
-               shape_1,
-               grad,
-               strides=strides,
-               padding=padding,
-               use_cudnn_on_gpu=use_cudnn_on_gpu,
-               data_format=data_format)
-        dw_t = tf.transpose(
-            dw,
-            (2, 3, 0, 1))
-        dw_symm_t = (0.5) * (dw_t + tf.transpose(
-            dw_t,
-            (1, 0, 2, 3)))
-        dw_symm = tf.transpose(
-            dw_symm_t,
-            (2, 3, 0, 1))
-        return dx, dw_symm
-except:
-    print 'Already imported SymmetricConv.'
-
-
+# Dependency for symmetric weight ops is in models/layers/ff.py
 def auxilliary_variables():
     """A dictionary containing defaults for auxilliary variables.
 
@@ -73,7 +33,7 @@ def auxilliary_variables():
         'delta': False,  # Scale Q
         'xi': False,  # Scale X
         'multiplicative_excitation': True,
-        'learn_crf_spatial': True,
+        'learn_crf_spatial': False,
         'rectify_weights': True  # +/- rectify weights or activities
     }
 
@@ -422,6 +382,7 @@ class ContextualCircuit(object):
                     shape=self.o_shape,
                     uniform=self.normal_initializer,
                     mask=None)))
+        # TODO: Combine Gates
         setattr(  # TODO: smart initialization of these
             self,
             self.weight_dict['O']['r']['bias'],

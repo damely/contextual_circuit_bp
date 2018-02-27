@@ -53,7 +53,8 @@ def data_to_tfrecords(
         ds_name,
         im_size,
         label_size,
-        preprocess):
+        preprocess,
+        store_z=False):
     """Convert dataset to tfrecords."""
     print 'Building dataset: %s' % ds_name
     for idx, ((fk, fv), (lk, lv)) in enumerate(
@@ -61,9 +62,12 @@ def data_to_tfrecords(
             files.iteritems(),
             labels.iteritems())):
         it_ds_name = '%s_%s.tfrecords' % (ds_name, fk)
+        if store_z:
+            means = []
+        else:
+            means = np.zeros((im_size))
         with tf.python_io.TFRecordWriter(it_ds_name) as tfrecord_writer:
             image_count = 0
-            means = np.zeros((im_size))
             for it_f, it_l in tqdm(
                     zip(fv, lv), total=len(fv), desc='Building %s' % fk):
                 if isinstance(it_f, basestring):
@@ -74,19 +78,22 @@ def data_to_tfrecords(
                         image = preprocess_image(image, preprocess, im_size)
                 else:
                     image = it_f
-                means += image
+                if store_z:
+                    means += [image]
+                else:
+                    means += image
                 if isinstance(it_l, basestring):
                     if '.npy' in it_l:
-                        it_l = np.load(it_l)
+                        label = np.load(it_l)
                     else:
-                        it_l = load_image(
+                        label = load_image(
                             it_l, label_size, reshape=False).astype(np.float32)
-                        it_l = preprocess_image(it_l, preprocess, label_size)
+                        label = preprocess_image(it_l, preprocess, label_size)
                 else:
-                    image = it_f
+                    label = it_l
                 data_dict = {
                     'image': encode_tf(targets['image'], image),
-                    'label': encode_tf(targets['label'], it_l)
+                    'label': encode_tf(targets['label'], label)
                 }
                 example = create_example(data_dict)
                 if example is not None:
@@ -97,6 +104,16 @@ def data_to_tfrecords(
                     # write the serialized object to disk
                     tfrecord_writer.write(serialized)
                     example = None
-            np.save('%s_%s_means' % (ds_name, fk), means / float(image_count))
+            if store_z:
+                means = np.asarray(means).reshape(len(means), -1)
+                np.savez(
+                    '%s_%s_means' % (ds_name, fk),
+                    image={
+                        'mean': means.mean(),
+                        'std': means.std()
+                        })
+            else:
+                np.save(
+                    '%s_%s_means' % (ds_name, fk), means / float(image_count))
             print 'Finished %s with %s images (dropped %s)' % (
                 it_ds_name, image_count, len(fv) - image_count)

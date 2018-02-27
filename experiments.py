@@ -118,7 +118,7 @@ class experiments():
             'timesteps': [3],
             'model_struct': [
                 os.path.join(
-                    model_folder, 'context_association_single_conv2d'),
+                     model_folder, 'context_association_single_conv2d'),
                 # os.path.join(
                 #     model_folder, 'context_association_full_full_conv2d'),
                 # os.path.join(
@@ -139,7 +139,7 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        exp['resize_output'] = [[128, 128]]  # [[150, 240]]
+        exp['resize_output'] = [[107, 160]]  # [[150, 240]]
         return exp
 
     def ALLEN_random_cells_103(self):

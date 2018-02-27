@@ -64,17 +64,28 @@ def training_loop(
     train_aux_check = np.any(['aux_score' in k for k in train_dict.keys()])
     val_aux_check = np.any(['aux_score' in k for k in val_dict.keys()])
     if config.save_weights:
+        # weight_dict = {
+        #     k[0]: v for k, v in val_model.var_dict.iteritems() if k[1] == 0}
         weight_dict = {
-            k[0]: v for k, v in val_model.var_dict.iteritems() if k[1] == 0}
+            k[0]: v for k, v in train_model.var_dict.iteritems() if k[1] == 0}
         val_dict = dict(
             val_dict,
             **weight_dict)
+        # weight_dict = {
+        #     k[0]: v
+        #       for k, v in train_model.var_dict.iteritems() if k[1] == 0}
+        # train_dict = dict(
+        #     train_dict,
+        #     **weight_dict)
     try:
         while not coord.should_stop():
             start_time = time.time()
             train_vars = sess.run(train_dict.values())
             it_train_dict = {k: v for k, v in zip(
                 train_dict.keys(), train_vars)}
+            # val_vars = sess.run(val_dict.values())
+            # it_val_dict = {k: v for k, v in zip(
+            #     val_dict.keys(), val_vars)}
             duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
             train_accs[step] = it_train_dict['train_accuracy_0']

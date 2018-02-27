@@ -1,12 +1,49 @@
 """Functions for handling feedforward and pooling operations."""
-# import numpy as np
-# import tensorflow as tf
-# from ops import initialization
-# from models.layers.activations import activations
-# from models.layers.normalizations import normalizations
+import tensorflow as tf
 from models.layers.ff_functions import ff_functions as ff_fun
 from models.layers.ff_functions import recurrent_functions as rf_fun
 from models.layers import pool
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import nn_ops
+
+
+try:
+    @tf.RegisterGradient('SymmetricConv')
+    def _Conv2DGrad(op, grad):
+        """Weight sharing for symmetric lateral connections."""
+        strides = op.get_attr('strides')
+        padding = op.get_attr('padding')
+        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
+        data_format = op.get_attr('data_format')
+        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
+        dx = nn_ops.conv2d_backprop_input(
+               shape_0,
+               op.inputs[1],
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw = nn_ops.conv2d_backprop_filter(
+               op.inputs[0],
+               shape_1,
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw_t = tf.transpose(
+            dw,
+            (2, 3, 0, 1))
+        dw_symm_t = (0.5) * (dw_t + tf.transpose(
+            dw_t,
+            (1, 0, 2, 3)))
+        dw_symm = tf.transpose(
+            dw_symm_t,
+            (2, 3, 0, 1))
+        return dx, dw_symm
+except:
+    print 'Already imported SymmetricConv.'
 
 
 class ff(object):
@@ -32,6 +69,23 @@ class ff(object):
                 setattr(self, k, v)
 
     def gather(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Layer that gathers a value at an index."""
+        context, act = ff_fun.gather_value_layer(
+            self=context,
+            bottom=act,
+            aux=it_dict['aux'],
+            name=name)
+        return context, act
+
+    def hermann_gather(
             self,
             context,
             act,

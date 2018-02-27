@@ -82,6 +82,7 @@ def get_data_pointers(dataset, base_dir, cv, log):
         else:
             log.info('Loading means from npz for cv: %s.' % cv)
             data_means = np.load(alt_data_pointer)
+            import ipdb;ipdb.set_trace()
             data_means_vol = data_means[data_means.keys()[0]].item()
             if 'image' in data_means_vol.keys():
                 data_means_image = data_means_vol['image']
@@ -381,6 +382,7 @@ def main(
                         display_name='training_precision_recall')
             log.info('Added training summaries.')
 
+        with tf.variable_scope('cnn', tf.AUTO_REUSE) as scope:
             # Validation model
             scope.reuse_variables()
             val_model = model_utils.model_class(

@@ -20,7 +20,7 @@ class data_processing(object):
         self.processed_images = 'processed_images'
         self.config = Config()
         self.im_size = [321, 481, 3]
-        self.model_input_image_size = [128, 128, 3]  # [150, 240, 3]
+        self.model_input_image_size = [107, 160, 3]  # [150, 240, 3]
         self.output_size = [321, 481, 1]  # 256 x 256 pixels, 7 x 7 angle
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
@@ -32,8 +32,8 @@ class data_processing(object):
             'val': 'val'
         }
         self.fold_options = {
-            'train': 'duplicate',
-            'val': 'mean'
+            'train': 'mean',
+            'val': 'duplicate'
         }
         self.targets = {
             'image': tf_fun.bytes_feature,
@@ -45,7 +45,7 @@ class data_processing(object):
         }
         self.tf_reader = {
             'image': {
-                'dtype': tf.float64,
+                'dtype': tf.float32,
                 'reshape': self.im_size
             },
             'label': {
@@ -135,7 +135,6 @@ class data_processing(object):
 
                         # Process images
                         proc_im = os.path.join(proc_image_dir, it_im_name)
-                        #misc.imsave(proc_im, im_data)
                         all_images.append(im_data)
                         file_vec += [proc_im]
                 elif self.fold_options[k] == 'mean':
@@ -146,16 +145,16 @@ class data_processing(object):
                         if transpose_labels:
                             ip_lab = np.swapaxes(ip_lab, 0, 1)
                         mean_labs += [ip_lab]
-                    all_images.append(im_data)
                     mean_lab = np.asarray(mean_labs).mean(0)
                     out_lab = os.path.join(
-                        proc_dir, '%s.npy' % it_label.split('.')[0])
+                        proc_dir, '%s.npy' % it_label.strip(
+                            self.im_extension)[0])
                     np.save(out_lab, mean_lab)
                     label_vec += [out_lab]
 
                     # Process images
                     proc_im = os.path.join(proc_image_dir, it_label)
-                    #misc.imsave(proc_im, im_data)
+                    all_images.append(im_data)
                     file_vec += [proc_im]
                 else:
                     raise NotImplementedError
@@ -167,14 +166,20 @@ class data_processing(object):
             # zscore
             # Overwrite the saved images... use floating point flag on imsave
             # Alternatively, save with scikit-image
-            all_images = np.array(all_images)
+            all_images = np.array(all_images).astype(np.float32)
             if k == 'train':
-                mean_rgb_train = all_images.mean(0,keepdims=True).mean(1,keepdims=True).mean(2,keepdims=True)
+                mean_rgb_train = all_images.mean(
+                    0, keepdims=True).mean(
+                    1, keepdims=True).mean(
+                    2, keepdims=True)
                 std_rgb_train = all_images.std()
-            all_images_z = (all_images - mean_rgb_train)/std_rgb_train
-
-            for i,img in enumerate(all_images_z):
-                np.save(file_vec[i] + '.npy',img.astype(np.float32))
+            all_images_z = (all_images - mean_rgb_train) / std_rgb_train
+            for i, img in enumerate(all_images_z):
+                np.save(
+                    '%s.npy' % file_vec[i].strip(self.im_extension),
+                    img.astype(np.float32))
+            # labels[k] = label_vec
+            # new_files[k] = ['%s.npy' % i for i in file_vec]
             labels[k] = label_vec
-            new_files[k] = [i+'.npy' for i in file_vec]
+            new_files[k] = ['%s.npy' % i for i in file_vec]
         return labels, new_files

@@ -23,6 +23,31 @@ def gather_value_layer(
     return self, out
 
 
+def hermann_gather_value_layer(
+        self,
+        bottom,
+        aux,
+        name,
+        eps=1e-12):
+    """Gather a value from a location in an activity tensor."""
+    assert aux is not None,\
+        'Gather op needs an aux dict with h/w coordinates.'
+    assert 'h' in aux.keys() and 'w' in aux.keys(),\
+        'Gather op dict needs h/w key value pairs'
+    # Take the mean of bottom across the first dimension (N)
+    mean_bottom = tf.reduce_mean(bottom, reduction_indices=[0], keepdims=True)
+    h_gap = aux['h_gap']
+    w_gap = aux['w_gap']
+    h_intersection = aux['h_intersection']
+    w_intersection = aux['w_intersection']
+    gap_score = tf.squeeze(
+        mean_bottom[:, h_gap, w_gap, :]) ** 2
+    intersection_score = tf.squeeze(
+        mean_bottom[:, h_intersection, w_intersection, :]) ** 2
+    out = gap_score / (intersection_score + eps)
+    return self, out
+
+
 # TODO: move each of these ops into a script in the functions folder.
 def dog_layer(
         self,

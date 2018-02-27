@@ -8,6 +8,7 @@ from models.layers.normalization_functions import contextual
 from models.layers.normalization_functions import contextual_single_ecrf
 from models.layers.normalization_functions import contextual_single_cs
 
+
 class normalizations(object):
     """Wrapper class for activation functions."""
 
@@ -59,7 +60,7 @@ class normalizations(object):
         https://www.shadlenlab.columbia.edu/people/Shushruth/Lab_Page/Home_files/GalleyProof.pdf
         CRF = 0.26 degrees (1x)
         eCRF near = 0.54 degrees (2x)
-        eCRF far = 1.41 degrees (5.5x)
+        eCRF far = 1.41 degrees (5.5x). Can go as low as 1 or ~ 3.84x
 
         Implementation is to calculate the RF of a computational unit in
         an activity tensor. Then, near and far eCRFs are derived relative
