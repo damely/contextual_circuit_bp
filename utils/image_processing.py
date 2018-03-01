@@ -8,6 +8,10 @@ def crop_center(img, crop_size):
     im_shape = img.shape
     x, y = im_shape[:2]
     cx, cy = crop_size[:2]
+    x_check = x < cx
+    y_check = y < cy
+    if np.any([x_check, y_check]):
+        return resize(img, crop_size)
     startx = x // 2 - (cx // 2)
     starty = y // 2 - (cy // 2)
     if len(im_shape) == 2:

@@ -188,7 +188,7 @@ def main(
                 config.data_augmentations,
                 log)
     if load_and_evaluate_ckpt is not None:
-        config.epochs = None
+        config.epochs = 1
         config.train_shuffle = False
         config.val_shuffle = False
     with tf.device('/cpu:0'):

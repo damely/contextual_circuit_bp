@@ -23,13 +23,13 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 4,
+            'timesteps': 3,
             'pre_batchnorm': False,
             'post_batchnorm': False,
             'vgg_extentions': 1,
             'dense_connections': False,
             'association_field': True,
-            'gru_gates': False,
+            'gru_gates': True,
             'regularization_targets': {  # Modulate sparsity
                 'q_t': {
                    'regularization_type': 'l1',  # 'orthogonal',

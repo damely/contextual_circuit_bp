@@ -8,6 +8,37 @@ from sklearn import metrics
 from matplotlib import pyplot as plt
 from dataset_processing import BSDS500
 from scipy import misc
+from matplotlib import gridspec
+
+
+def sigmoid(x):
+    """Apply a sigmoid nonlinearity."""
+    return 1/(1+np.exp(-x))
+
+
+def plot_mosaic(
+        maps,
+        title='Mosaic',
+        rc=None,
+        cc=None,
+        show_plot=True):
+    if rc is None:
+        rc = np.ceil(np.sqrt(len(maps))).astype(int)
+        cc = np.ceil(np.sqrt(len(maps))).astype(int)
+    f = plt.figure(figsize=(10, 10))
+    plt.suptitle(title, fontsize=20)
+    gs1 = gridspec.GridSpec(rc, cc)
+    gs1.update(wspace=0.01, hspace=0.01)  # set the spacing between axes.
+    for idx, im in enumerate(maps):
+        ax1 = plt.subplot(gs1[idx])
+        plt.axis('off')
+        ax1.set_xticklabels([])
+        ax1.set_yticklabels([])
+        ax1.set_aspect('equal')
+        ax1.imshow(im.squeeze())
+    if show_plot:
+        plt.show()
+        plt.close(f)
 
 
 def get_ckpt(path):
@@ -50,9 +81,8 @@ sel_ckpts = os.path.join(
     'data_cifs',
     'contextual_circuit',
     'checkpoints',
-    'contours_2018_03_01_11_09_38',  # context 'contours_2018_02_28_17_33_35',  # 1l cnn: contours_2018_02_28_14_17_57
-    'model_9000.ckpt-9000')
-sel_ckpts = '/media/data_cifs/contextual_circuit/checkpoints/contours_2018_03_01_13_25_50/model_500.ckpt-500'
+    'contours_2018_03_01_16_14_02',  # 1l cnn: contours_2018_02_28_14_17_57
+    'model_1000.ckpt-1000')
 
 # Get image/label info
 images = np.asarray([misc.imread(im) for im in image_data]).astype(np.float32)
@@ -81,16 +111,24 @@ else:
         experiment_name=exp_name,
         load_and_evaluate_ckpt=sel_ckpts)
 
-# from matplotlib import pyplot as plt; plt.subplot(1,3,1); im_num=2;plt.imshow(it_val_dict['val_scores'][im_num].squeeze()); plt.subplot(1,3,2); plt.imshow(it_val_dict['val_labels'][im_num].squeeze()); plt.subplot(1,3,3); plt.imshow(it_val_dict['val_images'][im_num].squeeze());plt.show()
+if len(scores.keys()) > 1:
+    raise RuntimeError
+scores = scores[0]
+labs = labs[0]
 
+# Create a mosaic
+plot_mosaic(images.astype(np.uint8), title='Images', rc=10, cc=10)
+plot_mosaic(labs, rc=10, cc=10, title='Labels', show_plot=True)
+# plot_mosaic(labels, rc=10, cc=10, title='Labels', show_plot=True)
+plot_mosaic(scores, rc=10, cc=10, title='Predictions', show_plot=True)
 
-preds = np.argmax(all_scores, axis=-1)
-bin_labs = (np.copy(all_labs) > 0).astype(int)
-acc = np.mean(bin_labs == preds)
-f_score = metrics.f1_score(y_true=bin_labs, y_pred=preds)
+# Evaluate performance 
+map_score = metrics.average_precision_score(
+    labs.reshape(batch_size, -1),
+    scores.reshape(batch_size, -1))
 p, r, thresh = metrics.precision_recall_curve(
-    bin_labs,
-    all_scores[:, 1],
+    labs.reshape(batch_size, -1),
+    scores.reshape(batch_size, -1),
     pos_label=1)
 plt.step(
     r,

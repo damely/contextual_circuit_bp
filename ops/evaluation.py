@@ -79,18 +79,18 @@ def evaluation_loop(
         for idx in np.arange(num_batches):
             batch_images = placeholder_data['image_data'][batch_index == idx]
             batch_labels = placeholder_data['label_data'][batch_index == idx]
+            import ipdb;ipdb.set_trace()
             batch_images = batch_images.reshape(
                 placeholder_data['val_image_shape'])
             batch_labels = batch_labels.reshape(
                 placeholder_data['val_label_shape'])
             feed_dict = {
-                placeholder_data['train_images']: batch_images,
-                placeholder_data['train_labels']: batch_labels,
+                placeholder_data['val_images']: batch_images,
+                placeholder_data['val_labels']: batch_labels,
             }
-            it_vars = sess.run(train_dict.values(), feed_dict=feed_dict)
+            it_vars = sess.run(val_dict.values(), feed_dict=feed_dict)
             it_dict = {k: v for k, v in zip(
-                train_dict.keys(), it_vars)}
-            import ipdb;ipdb.set_trace()
+                val_dict.keys(), it_vars)}
             a = 2
 
     else:
@@ -132,8 +132,8 @@ def evaluation_loop(
                                 for itk, itv in it_val_dict.iteritems()
                                 if 'aux_score' in itk}
                             it_val_aux += [iva]
-                    val_scores[step] = it_val_scores
-                    val_labels[step] = it_val_labels
+                    val_scores[step] = np.concatenate(it_val_scores)
+                    val_labels[step] = np.concatenate(it_val_labels)
                     val_aux[step] = it_val_aux
                     val_images[step] = it_val_dict['val_images']
 
@@ -146,7 +146,6 @@ def evaluation_loop(
                             config.experiment_name,
                             step),
                         output_string=weight_dir)
-                import ipdb;ipdb.set_trace()
 
                 # End iteration
                 step += 1

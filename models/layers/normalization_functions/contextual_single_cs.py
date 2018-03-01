@@ -573,27 +573,24 @@ class ContextualCircuit(object):
         return P
 
     def full(self, i0, O, I):
-        """Published CM with learnable weights.
+        """Contextual circuit body."""
 
-        Swap out scalar weights for GRU-style update gates:
-        # Eps_eta is I forget gate
-        # Eta is I input gate
-        # sig_tau is O forget gate
-        # tau is O input gate
-        """
-
-        # Circuit input
+        # -- Circuit input receives recurrent output (O)
+        # CRF Excitation
         if self.association_field:
+            # Use a full kernel for - surround.
             if self.vgg_extentions > 1:
+                # Allow for a vgg-style calculation of surround
                 previous_P = []
                 for pidx in range(self.vgg_extentions):
                     if pidx == 0:
                         it_key = self.weight_dict['P']['r']['weight']
                         P = self.process_p(
-                            data=I,
+                            data=O,
                             key=it_key,
                             rectification=tf.minimum)
                     else:
+                        # Skip connections between surround subfilters
                         if self.dense_connections:
                             previous_P += [P]
                         it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
@@ -605,26 +602,28 @@ class ContextualCircuit(object):
                             for dense_p in previous_P:
                                 P = P + dense_p
             else:
+                # Use a single filter for the surround
                 P = self.process_p(
-                    data=I,
+                    data=O,
                     key=self.weight_dict['P']['r']['weight'],
                     rectification=tf.minimum)
         else:
+            # Use 1x1 convolution surround tuning
             P = self.conv_2d_op(
                 data=self.apply_tuning(
-                    data=I,
+                    data=O,
                     wm='P',
                     nl=self.post_tuning_nl,
                     rectify=tf.minimum,
                     symmetric_weights=self.symmetric_weights),
                 weight_key=self.weight_dict['P']['r']['weight'])
 
-        # P inhibition on input
+        # Rectify surround activities instead of weights
         if not self.rectify_weights:
             P = tf.minimum(P, 0)
 
         if self.learn_crf_spatial:
-            # Ensure that CRF for association field is masked
+            # Set the CRF to a learnable shared +/- kernel
             q_weights = self[
                 self.weight_dict['Q']['r']['weight']]
             if self.rectify_weights:
@@ -635,6 +634,7 @@ class ContextualCircuit(object):
                 weights=q_weights,
                 symmetric_weights=self.symmetric_weights)
         else:
+            # Use 1x1 convolution CRF tuning
             Q = self.conv_2d_op(
                 data=self.apply_tuning(
                     data=I,
@@ -644,19 +644,17 @@ class ContextualCircuit(object):
                     symmetric_weights=self.symmetric_weights),
                 weight_key=self.weight_dict['Q']['r']['weight'])
 
-        # P inhibition on input
-        if self.learn_crf_spatial and not self.rectify_weights:
+        # Rectify CRF activities instead of weights
+        if not self.rectify_weights:
             Q = tf.minimum(Q, 0)
 
-        # Gates
+        # Input gates
         I_update_input = self.conv_2d_op(
             data=self.X,
-            weight_key=self.weight_dict['I']['f']['weight']
-        )
+            weight_key=self.weight_dict['I']['f']['weight'])
         I_update_recurrent = self.conv_2d_op(
             data=O,
-            weight_key=self.weight_dict['I']['r']['weight']
-        )
+            weight_key=self.weight_dict['I']['r']['weight'])
         I_update = self.gate_nl(
             I_update_input + I_update_recurrent + self[
                 self.weight_dict['I']['r']['bias']])
@@ -669,19 +667,25 @@ class ContextualCircuit(object):
             I_update = (1 / self.dropout) * self.gate_nl(
                 I_update_input + I_update_recurrent)
 
-        # Circuit input
+        # Calculate input (-) integration
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I = I_update * I
         I_summand = self.recurrent_nl(
             (self.xi * self.X)
             - ((self.alpha * I + self.mu) * Q)
             - ((self.beta * I + self.nu) * P))
-        if self.gru_gates:
-            I = I_update * I_summand
-        else:
+        if not self.gru_gates:
+            # Alternatively, forget gates on the input
             I = (I_update * I) + ((1 - I_update) * I_summand)
+        else:
+            I = I_summand
 
-        # Circuit output
+        # -- Circuit output receives recurrent input (I)
         if self.association_field:
+            # Use a full kernel for + surround.
             if self.vgg_extentions > 1:
+                # Allow for a vgg-style calculation of surround
                 previous_P = []
                 for pidx in range(self.vgg_extentions):
                     if pidx == 0:
@@ -691,6 +695,7 @@ class ContextualCircuit(object):
                             key=it_key,
                             rectification=tf.maximum)
                     else:
+                        # Skip connections between surround subfilters
                         if self.dense_connections:
                             previous_P += [P]
                         it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
@@ -702,18 +707,29 @@ class ContextualCircuit(object):
                             for dense_p in previous_P:
                                 P = P + dense_p
             else:
+                # Use a single filter for the surround
                 P = self.process_p(
                     data=I,
                     key=self.weight_dict['P']['r']['weight'],
                     rectification=tf.maximum)
+        else:
+            # Use 1x1 convolution surround tuning
+            P = self.conv_2d_op(
+                data=self.apply_tuning(
+                    data=O,
+                    wm='P',
+                    nl=self.post_tuning_nl,
+                    rectify=tf.minimum,
+                    symmetric_weights=self.symmetric_weights),
+                weight_key=self.weight_dict['P']['r']['weight'])
 
-        # P excitation on output
+        # Rectify surround activities instead of weights
         if not self.rectify_weights:
             P = tf.maximum(P, 0)
 
         # CRF excitation
         if self.learn_crf_spatial:
-            # Ensure that CRF for association field is masked
+            # Set the CRF to a learnable shared +/- kernel
             q_weights = self[
                 self.weight_dict['Q']['r']['weight']]
             if self.rectify_weights:
@@ -724,6 +740,7 @@ class ContextualCircuit(object):
                 weights=q_weights,
                 symmetric_weights=self.symmetric_weights)
         else:
+            # Use 1x1 convolution CRF tuning
             Q = self.conv_2d_op(
                 data=self.apply_tuning(
                     data=I,
@@ -733,18 +750,17 @@ class ContextualCircuit(object):
                     symmetric_weights=self.symmetric_weights),
                 weight_key=self.weight_dict['Q']['r']['weight'])
 
-        # P inhibition on input
-        if self.learn_crf_spatial and not self.rectify_weights:
+        # Rectify surround activities instead of weights
+        if not self.rectify_weights:
             Q = tf.maximum(Q, 0)
 
+        # Output gates
         O_update_input = self.conv_2d_op(
             data=self.X,
-            weight_key=self.weight_dict['O']['f']['weight']
-        )
+            weight_key=self.weight_dict['O']['f']['weight'])
         O_update_recurrent = self.conv_2d_op(
             data=I,
-            weight_key=self.weight_dict['O']['r']['weight']
-        )
+            weight_key=self.weight_dict['O']['r']['weight'])
         O_update = self.gate_nl(
             O_update_input + O_update_recurrent + self[
                 self.weight_dict['O']['r']['bias']])
@@ -756,10 +772,14 @@ class ContextualCircuit(object):
         elif not self.train and self.dropout is not None:
             O_update = (1 / self.dropout) * self.gate_nl(
                 O_update_input + O_update_recurrent)
+
+        # Calculate output (+) integration
         if self.multiplicative_excitation:
+            # Multiplicative gating I * (P + Q)
             O_summand = self.recurrent_nl(
                 self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
         else:
+            # Additive gating I + P + Q
             O_summand = self.recurrent_nl(
                 self.zeta * I + self.gamma * P + self.delta * Q)
         O = (O_update * O) + ((1 - O_update) * O_summand)

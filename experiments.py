@@ -143,6 +143,7 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
+        exp['loss_weights']
         # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
         return exp
 
