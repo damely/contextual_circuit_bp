@@ -188,7 +188,7 @@ def main(
                 config.data_augmentations,
                 log)
     if load_and_evaluate_ckpt is not None:
-        config.epochs = 1
+        config.epochs = None
         config.train_shuffle = False
         config.val_shuffle = False
     with tf.device('/cpu:0'):
@@ -311,6 +311,8 @@ def main(
                 dataset_module.output_size))
 
     # Prepare model on GPU
+    if not hasattr(dataset_module, 'input_normalization'):
+        dataset_module.input_normalization = None
     with tf.device(gpu_device):
         with tf.variable_scope('cnn') as scope:
             # Training model

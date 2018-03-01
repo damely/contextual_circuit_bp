@@ -5,11 +5,18 @@ import numpy as np
 
 def crop_center(img, crop_size):
     """Center crop images."""
-    x, y = img.shape[:2]
-    cx, cy = crop_size
+    im_shape = img.shape
+    x, y = im_shape[:2]
+    cx, cy = crop_size[:2]
     startx = x // 2 - (cx // 2)
     starty = y // 2 - (cy // 2)
-    return img[starty:starty + cy, startx:startx + cx]
+    if len(im_shape) == 2:
+        return img[starty:starty + cy, startx:startx + cx]
+    elif len(im_shape) == 3:
+        return img[starty:starty + cy, startx:startx + cx, :]
+    else:
+        raise NotImplementedError(
+            'Cannot handle im size of %s' % len(im_shape))
 
 
 def resize(img, new_size):

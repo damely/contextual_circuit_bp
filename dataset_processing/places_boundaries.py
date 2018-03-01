@@ -15,15 +15,15 @@ class data_processing(object):
         self.processed_labels = 'processed_labels'
         self.processed_images = 'processed_images'
         self.config = Config()
-        self.im_size = [321, 481, 3]
-        self.model_input_image_size = [300, 480, 3]  # [107, 160, 3]
-        self.output_size = [321, 481, 1]
+        self.im_size = [256, 256, 3]
+        self.model_input_image_size = [256, 256, 3]  # [107, 160, 3]
+        self.output_size = [256, 256, 1]
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
         self.score_metric = 'pearson'
         self.aux_scores = ['f1']
         self.store_z = True        
-        self.preprocess = [None]  # ['resize_nn']
+        self.preprocess = ['crop_center']  # ['resize_nn']
         self.folds = {
             'train': 'training.txt',
             'val': 'validation.txt'
@@ -71,4 +71,5 @@ class data_processing(object):
                 'labels',
                 '%s%s' % (x.strip(self.im_extension), self.lab_extension))
                 for x in im_list]
+        # TODO: Produce all possible 256x256 crops
         return image_files, label_files

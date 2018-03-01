@@ -17,13 +17,13 @@ layer_structure = [
             'SRF': 11,
             'CRF_excitation': 11, 
             'CRF_inhibition': 11,
-            'SSN': 22,
+            'SSN': 30,
             'SSF': 30
         },
         'normalization': ['contextual_single_ecrf'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 3,
+            'timesteps': 4,
             'pre_batchnorm': False,
             'post_batchnorm': False,
             'vgg_extentions': 1,
@@ -50,7 +50,7 @@ output_structure = [
         'weights': [1],
         'names': ['fc4'],
         'filter_size': [1],
-        # 'activation': ['sigmoid'],
-        # 'activation_target': ['post']
+        'activation': ['sigmoid'],
+        'activation_target': ['post']
     }
 ]

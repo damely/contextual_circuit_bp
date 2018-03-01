@@ -23,6 +23,7 @@ def get_ckpt(path):
 
 exp_name = 'contours'
 batch_size = 10
+use_placeholders = False
 
 # Load validation data
 data_file = BSDS500.data_processing().get_files()
@@ -35,8 +36,8 @@ data_files = np.load(
         'images',
         'val',
         'file_paths.npz'))
-image_data = data_files['files'].item()['train']
-label_data = data_files['labels'].item()['train']
+image_data = data_files['files'].item()['val']
+label_data = data_files['labels'].item()['val']
 
 # Get model
 ckpt_dir = os.path.join(
@@ -49,8 +50,9 @@ sel_ckpts = os.path.join(
     'data_cifs',
     'contextual_circuit',
     'checkpoints',
-    'contours_2018_02_28_17_33_35',
-    'model_19000.ckpt-19000')
+    'contours_2018_03_01_11_09_38',  # context 'contours_2018_02_28_17_33_35',  # 1l cnn: contours_2018_02_28_14_17_57
+    'model_9000.ckpt-9000')
+sel_ckpts = '/media/data_cifs/contextual_circuit/checkpoints/contours_2018_03_01_13_25_50/model_500.ckpt-500'
 
 # Get image/label info
 images = np.asarray([misc.imread(im) for im in image_data]).astype(np.float32)
@@ -69,12 +71,17 @@ placeholder_data = {
     'image_data': images,
     'label_data': labels
 }
-labs, scores = main.main(
-    experiment_name=exp_name,
-    load_and_evaluate_ckpt=sel_ckpts,
-    placeholder_data=placeholder_data)
+if use_placeholders:
+    labs, scores = main.main(
+        experiment_name=exp_name,
+        load_and_evaluate_ckpt=sel_ckpts,
+        placeholder_data=placeholder_data)
+else:
+    labs, scores = main.main(
+        experiment_name=exp_name,
+        load_and_evaluate_ckpt=sel_ckpts)
 
-
+# from matplotlib import pyplot as plt; plt.subplot(1,3,1); im_num=2;plt.imshow(it_val_dict['val_scores'][im_num].squeeze()); plt.subplot(1,3,2); plt.imshow(it_val_dict['val_labels'][im_num].squeeze()); plt.subplot(1,3,3); plt.imshow(it_val_dict['val_images'][im_num].squeeze());plt.show()
 
 
 preds = np.argmax(all_scores, axis=-1)

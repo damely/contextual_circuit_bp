@@ -75,9 +75,10 @@ def data_to_tfrecords(
                         image = np.load(it_f)
                     else:
                         image = load_image(it_f, im_size).astype(np.float32)
+                    if len(image.shape) > 1:
                         image = preprocess_image(image, preprocess, im_size)
                 else:
-                    image = it_f
+                    image = preprocess_image(it_f, preprocess, im_size)
                 if store_z:
                     means += [image]
                 else:
@@ -88,9 +89,13 @@ def data_to_tfrecords(
                     else:
                         label = load_image(
                             it_l, label_size, reshape=False).astype(np.float32)
-                        label = preprocess_image(it_l, preprocess, label_size)
+                    if len(label.shape) > 1:
+                        label = preprocess_image(label, preprocess, label_size)
                 else:
                     label = it_l
+                    if len(label.shape) > 1:
+                        label = preprocess_image(
+                            label, preprocess, label_size)
                 data_dict = {
                     'image': encode_tf(targets['image'], image),
                     'label': encode_tf(targets['label'], label)

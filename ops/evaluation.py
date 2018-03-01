@@ -97,7 +97,6 @@ def evaluation_loop(
         try:
             while not coord.should_stop():
                 start_time = time.time()
-                import ipdb;ipdb.set_trace()
                 train_vars = sess.run(train_dict.values())
                 it_train_dict = {k: v for k, v in zip(
                     train_dict.keys(), train_vars)}
@@ -147,6 +146,7 @@ def evaluation_loop(
                             config.experiment_name,
                             step),
                         output_string=weight_dir)
+                import ipdb;ipdb.set_trace()
 
                 # End iteration
                 step += 1

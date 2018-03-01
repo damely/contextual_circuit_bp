@@ -59,8 +59,7 @@ def auxilliary_variables():
         'hidden_init': 'random',
         'tuning_init': 'cov',  # TODO: Initialize tuning as input covariance
         'association_field': False,
-        'tuning_nl': 'relu',
-        'train': True,
+        'tuning_nl': tf.nn.relu,
         'dropout': None,
         'separable': False,  # Need C++ implementation.
         'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
@@ -82,18 +81,6 @@ def auxilliary_variables():
     }
 
 
-def interpret_nl(nl):
-    """Returns appropriate nonlinearity."""
-    if nl is not None or nl is not 'pass':
-        # Rectification on the "tuned" activities
-        if nl == 'relu':
-            return tf.nn.relu
-        elif nl == 'selu':
-            return tf.nn.selu
-        else:
-            raise NotImplementedError
-
-
 class ContextualCircuit(object):
     def __getitem__(self, name):
         return getattr(self, name)
@@ -110,13 +97,15 @@ class ContextualCircuit(object):
             SSF=29,
             strides=[1, 1, 1, 1],
             padding='SAME',
-            aux=None):
+            aux=None,
+            train=True):
         """Global initializations and settings."""
         self.X = X
         self.n, self.h, self.w, self.k = [int(x) for x in X.get_shape()]
         self.timesteps = timesteps
         self.strides = strides
         self.padding = padding
+        self.train = train
 
         # Sort through and assign the auxilliary variables
         aux_vars = auxilliary_variables()
@@ -147,7 +136,6 @@ class ContextualCircuit(object):
         self.i_shape = [self.gate_filter, self.gate_filter, self.k, self.k]
         self.o_shape = [self.gate_filter, self.gate_filter, self.k, self.k]
         self.bias_shape = [1, 1, 1, self.k]
-
         self.tuning_params = ['Q', 'P']  # Learned connectivity
         self.tuning_shape = [1, 1, self.k, self.k]
 
@@ -155,7 +143,6 @@ class ContextualCircuit(object):
         self.u_nl = tf.identity
         self.q_nl = tf.identity
         self.p_nl = tf.identity
-        self.tuning_nl = interpret_nl(self.tuning_nl)
 
     def update_params(self, kwargs):
         """Update the class attributes with kwargs."""

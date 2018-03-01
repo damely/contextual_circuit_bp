@@ -123,8 +123,12 @@ class experiments():
                 #     model_folder, 'context_association_full_full_conv2d'),
                 # os.path.join(
                 #     model_folder, 'conv2d'),
+                # os.path.join(
+                #     model_folder, 'conv2d_equal'),
+                # os.path.join(
+                #     model_folder, 'conv2d_3l'),
             ],
-            'dataset': ['BSDS500_2']
+            'dataset': ['BSDS500']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
@@ -139,7 +143,7 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        exp['resize_output'] = [[107, 160]]  # [[150, 240]]
+        # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
         return exp
 
     def ALLEN_random_cells_103(self):

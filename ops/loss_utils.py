@@ -33,7 +33,12 @@ def optimizer_interpreter(
 
 def momentum(loss, lr, momentum=0.9):
     """Wrapper for SGD with momentum."""
-    tf.train.MomentumOptimizer(lr, momentum=momentum).minimize(loss)
+    if isinstance(lr, dict):
+        return tf.train.MomentumOptimizer(
+            learning_rate=lr['learning_rate'],
+            momentum=momentum).minimize(loss, lr['global_step'])
+    else:
+        return tf.train.MomentumOptimizer(lr, momentum=momentum).minimize(loss)
 
 
 def derive_weights(weights, mu=0.15):
@@ -364,3 +369,60 @@ def sigmoid_ce(logits, labels, weights, force_dtype=tf.float32):
     sig_loss = tf.reduce_mean(sig_loss)
     return sig_loss, sig_loss
 
+
+def create_lr_schedule(train_batch, num_training):
+    """Create a step-wise decaying learning rate schedule."""
+    batch_denom = num_training * train_batch
+    learning_rate_fn = learning_rate_with_decay(
+        batch_size=train_batch,
+        batch_denom=batch_denom,  # * 10 # 256,
+        num_images=num_training,
+        boundary_epochs=[30, 60, 80, 90],
+        decay_rates=[1, 0.1, 0.01, 0.001, 1e-4])
+    global_step = tf.train.get_or_create_global_step()
+    learning_rate = learning_rate_fn(global_step)
+
+    # Create a tensor named learning_rate for logging purposes
+    tf.summary.scalar(
+        'learning_rate',
+        tf.identity(learning_rate, name='learning_rate'))
+    return {'learning_rate': learning_rate, 'global_step': global_step}
+
+
+def learning_rate_with_decay(
+        batch_size,
+        batch_denom,
+        num_images,
+        boundary_epochs,
+        decay_rates):
+    """Get a learning rate that decays step-wise as training progresses.
+
+    Args:
+        batch_size: the number of examples processed in each training batch.
+        batch_denom: this value will be used to scale the base learning rate.
+            `0.1 * batch size` is divided by this number, such that when
+            batch_denom == batch_size, the initial learning rate will be 0.1.
+        num_images: total number of images that will be used for training.
+        boundary_epochs: list of ints representing the epochs at which we
+            decay the learning rate.
+        decay_rates: list of floats representing the decay rates to be used
+            for scaling the learning rate. Should be the same length as
+            boundary_epochs.
+
+    Returns:
+        Returns a function that takes a single argument - the number of batches
+        trained so far (global_step)- and returns the learning rate to be used
+        for training the next batch.
+    """
+    initial_learning_rate = 0.1 * batch_size / batch_denom
+    batches_per_epoch = num_images / batch_size
+
+    # Multiply the learning rate by 0.1 at 100, 150, and 200 epochs.
+    boundaries = [int(batches_per_epoch * epoch) for epoch in boundary_epochs]
+    vals = [initial_learning_rate * decay for decay in decay_rates]
+
+    def learning_rate_fn(global_step):
+        global_step = tf.cast(global_step, tf.int32)
+        return tf.train.piecewise_constant(global_step, boundaries, vals)
+
+    return learning_rate_fn

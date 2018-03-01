@@ -35,7 +35,8 @@ class model_class(object):
         self.output_size = output_size
         self.share_vars = ['training', 'output_size']
         self.layer_vars = {k: self[k] for k in self.share_vars}
-        self.dict_norm_key = 'mean'
+        input_normalization = kwargs.get('input_normalization', 'mean')
+        self.input_normalization = input_normalization
 
     def build(
             self,
@@ -48,13 +49,13 @@ class model_class(object):
         """Main model creation method."""
         if self.mean is not None:
             if isinstance(self.mean, dict):
-                if self.dict_norm_key == 'mean':
+                if self.input_normalization == 'mean':
                     data -= self.mean['mean']
-                elif self.dict_norm_key == 'max':
+                elif self.input_normalization == 'max':
                     data /= (
                         np.expand_dims(
                             self.mean['max'], axis=0)).astype(np.float32)
-                elif self.dict_norm_key == 'zscore':
+                elif self.input_normalization == 'zscore':
                     data -= self.mean['mean']
                     data /= self.mean['std']
                 else:

@@ -28,7 +28,7 @@ class data_processing(object):
         self.aux_scores = ['f1']
         self.store_z = True
         self.input_normalization = 'zscore'
-        self.preprocess = [None]  # ['resize_nn']
+        self.preprocess = [None]  # Preprocessing before tfrecords
         self.folds = {
             'train': 'train',
             'val': 'val'
@@ -171,4 +171,3 @@ class data_processing(object):
                 labels=labels,
                 files=new_files)
         return labels, new_files
-
