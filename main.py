@@ -82,12 +82,16 @@ def get_data_pointers(dataset, base_dir, cv, log):
         else:
             log.info('Loading means from npz for cv: %s.' % cv)
             data_means = np.load(alt_data_pointer)
-            import ipdb;ipdb.set_trace()
-            data_means_vol = data_means[data_means.keys()[0]].item()
-            if 'image' in data_means_vol.keys():
-                data_means_image = data_means_vol['image']
-            if 'label' in data_means_vol.keys():
-                data_means_label = data_means_vol['label']
+            if 'image' in data_means.keys():
+                data_means_image = data_means['image']
+            if 'label' in data_means.keys():
+                data_means_label = data_means['label']
+            if data_means_image is not None and isinstance(
+                    data_means_image, np.object):
+                data_means_image = data_means_image.item()
+            if data_means_label is not None and isinstance(
+                    data_means_label, np.object):
+                data_means_label = data_means_label.item()
     else:
         data_means_image = np.load(data_means)
     return data_pointer, data_means_image, data_means_label
@@ -97,6 +101,7 @@ def main(
         experiment_name,
         list_experiments=False,
         load_and_evaluate_ckpt=None,
+        placeholder_data=None,
         gpu_device='/gpu:0'):
     """Create a tensorflow worker to run experiments in your DB."""
     if list_experiments:
@@ -138,18 +143,26 @@ def main(
         model_dir=config.dataset_info,
         dataset=config.dataset)
     dataset_module = dataset_module.data_processing()  # hardcoded class name
+    train_key = [k for k in dataset_module.folds.keys() if 'train' in k]
+    if not len(train_key):
+        train_key = 'train'
+    else:
+        train_key = train_key[0]
     train_data, train_means_image, train_means_label = get_data_pointers(
         dataset=config.dataset,
         base_dir=config.tf_records,
-        cv=dataset_module.folds.keys()[1],  # TODO: SEARCH FOR INDEX.
-        log=log
-    )
+        cv=train_key,
+        log=log)
+    val_key = [k for k in dataset_module.folds.keys() if 'val' in k]
+    if not len(val_key):
+        val_key = 'train'
+    else:
+        val_key = val_key[0]
     val_data, val_means_image, val_means_label = get_data_pointers(
         dataset=config.dataset,
         base_dir=config.tf_records,
-        cv=dataset_module.folds.keys()[0],
-        log=log
-    )
+        cv=train_key,
+        log=log)
 
     # Initialize output folders
     dir_list = {
@@ -176,32 +189,79 @@ def main(
                 log)
     if load_and_evaluate_ckpt is not None:
         config.epochs = 1
-        config.shuffle = False
+        config.train_shuffle = False
+        config.val_shuffle = False
     with tf.device('/cpu:0'):
-        train_images, train_labels = data_loader.inputs(
-            dataset=train_data,
-            batch_size=config.batch_size,
-            model_input_image_size=dataset_module.model_input_image_size,
-            tf_dict=dataset_module.tf_dict,
-            data_augmentations=config.data_augmentations,
-            num_epochs=config.epochs,
-            tf_reader_settings=dataset_module.tf_reader,
-            shuffle=config.shuffle_train,
-            resize_output=config.resize_output)
-        if hasattr(config, 'val_augmentations'):
-            val_augmentations = config.val_augmentations
+        if placeholder_data:
+            placeholder_shape = placeholder_data['train_image_shape']
+            placeholder_dtype = placeholder_data['train_image_dtype']
+            original_train_images = tf.placeholder(
+                dtype=placeholder_dtype,
+                shape=placeholder_shape,
+                name='train_images')
+            placeholder_shape = placeholder_data['train_label_shape']
+            placeholder_dtype = placeholder_data['train_label_dtype']
+            original_train_labels = tf.placeholder(
+                dtype=placeholder_dtype,
+                shape=placeholder_shape,
+                name='train_labels')
+            placeholder_shape = placeholder_data['val_image_shape']
+            placeholder_dtype = placeholder_data['val_image_dtype']
+            original_val_images = tf.placeholder(
+                dtype=placeholder_dtype,
+                shape=placeholder_shape,
+                name='val_images')
+            placeholder_shape = placeholder_data['val_label_shape']
+            placeholder_dtype = placeholder_data['val_label_dtype']
+            original_val_labels = tf.placeholder(
+                dtype=placeholder_dtype,
+                shape=placeholder_shape,
+                name='val_labels')
+
+            # Apply augmentations
+            train_images, train_labels = data_loader.placeholder_image_augmentations(
+                images=original_train_images,
+                model_input_image_size=dataset_module.model_input_image_size,
+                labels=original_train_labels,
+                data_augmentations=config.data_augmentations,
+                batch_size=config.batch_size)
+            val_images, val_labels = data_loader.placeholder_image_augmentations(
+                images=original_val_images,
+                model_input_image_size=dataset_module.model_input_image_size,
+                labels=original_val_labels,
+                data_augmentations=config.data_augmentations,
+                batch_size=config.batch_size)
+
+            # Store in the placeholder dict
+            placeholder_data['train_images'] = original_train_images
+            placeholder_data['train_labels'] = original_train_labels
+            placeholder_data['val_images'] = original_val_images
+            placeholder_data['val_labels'] = original_val_labels
         else:
-            val_augmentations = config.data_augmentations
-        val_images, val_labels = data_loader.inputs(
-            dataset=val_data,
-            batch_size=config.batch_size,
-            model_input_image_size=dataset_module.model_input_image_size,
-            tf_dict=dataset_module.tf_dict,
-            data_augmentations=val_augmentations,
-            num_epochs=config.epochs,
-            tf_reader_settings=dataset_module.tf_reader,
-            shuffle=config.shuffle_val,
-            resize_output=config.resize_output)
+            train_images, train_labels = data_loader.inputs(
+                dataset=train_data,
+                batch_size=config.batch_size,
+                model_input_image_size=dataset_module.model_input_image_size,
+                tf_dict=dataset_module.tf_dict,
+                data_augmentations=config.data_augmentations,
+                num_epochs=config.epochs,
+                tf_reader_settings=dataset_module.tf_reader,
+                shuffle=config.shuffle_train,
+                resize_output=config.resize_output)
+            if hasattr(config, 'val_augmentations'):
+                val_augmentations = config.val_augmentations
+            else:
+                val_augmentations = config.data_augmentations
+            val_images, val_labels = data_loader.inputs(
+                dataset=val_data,
+                batch_size=config.batch_size,
+                model_input_image_size=dataset_module.model_input_image_size,
+                tf_dict=dataset_module.tf_dict,
+                data_augmentations=val_augmentations,
+                num_epochs=config.epochs,
+                tf_reader_settings=dataset_module.tf_reader,
+                shuffle=config.shuffle_val,
+                resize_output=config.resize_output)
     log.info('Created tfrecord dataloader tensors.')
 
     # Load model specification
@@ -257,7 +317,8 @@ def main(
             model = model_utils.model_class(
                 mean=train_means_image,
                 training=True,
-                output_size=dataset_module.output_size)
+                output_size=dataset_module.output_size,
+                input_normalization=dataset_module.input_normalization)
             train_scores, model_summary = model.build(
                 data=train_images,
                 layer_structure=model_dict.layer_structure,
@@ -318,6 +379,15 @@ def main(
                     regularizations=model.regularizations,
                     loss=train_loss,
                     wd_penalty=config.regularization_strength)
+            if config.lr > 1:
+                old_lr = config.lr
+                config.lr = loss_utils.create_lr_schedule(
+                    train_batch=config.batch_size,
+                    num_training=config.lr)
+                config.optimizer = 'momentum'
+                log.info('Forcing momentum classifier.')
+            else:
+                old_lr = None
             train_op = loss_utils.optimizer_interpreter(
                 loss=train_loss,
                 lr=config.lr,
@@ -387,8 +457,9 @@ def main(
             scope.reuse_variables()
             val_model = model_utils.model_class(
                 mean=train_means_image,  # Normalize with train data
-                training=False,  # False,
-                output_size=dataset_module.output_size)
+                training=False,
+                output_size=dataset_module.output_size,
+                input_normalization=dataset_module.input_normalization)
             val_scores, _ = val_model.build(  # Ignore summary
                 data=val_images,
                 layer_structure=model_dict.layer_structure,
@@ -500,8 +571,11 @@ def main(
     summary_writer = tf.summary.FileWriter(dir_list['summaries'], sess.graph)
 
     # Set up exemplar threading
-    coord = tf.train.Coordinator()
-    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+    if placeholder_data:
+        coord, threads = None, None
+    else:
+        coord = tf.train.Coordinator()
+        threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
     # Create dictionaries of important training and validation information
     train_dict = {
@@ -536,6 +610,8 @@ def main(
             val_dict['val_aux_%s' % m] = val_aux[m]
 
     # Start training loop
+    if old_lr is not None:
+        config.lr = old_lr
     np.save(
         os.path.join(
             dir_list['condition_evaluations'], 'training_config_file'),
@@ -558,7 +634,8 @@ def main(
             val_dict=val_dict,
             train_model=model,
             val_model=val_model,
-            exp_params=exp_params)
+            exp_params=exp_params,
+            placeholder_data=placeholder_data)
     else:
         output_dict = training.training_loop(
             config=config,

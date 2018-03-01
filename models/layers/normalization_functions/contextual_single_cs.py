@@ -3,6 +3,48 @@ import numpy as np
 import tensorflow as tf
 from utils import py_utils
 from ops import initialization
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import nn_ops
+
+
+try:
+    @tf.RegisterGradient('SymmetricConv')
+    def _Conv2DGrad(op, grad):
+        """Weight sharing for symmetric lateral connections."""
+        strides = op.get_attr('strides')
+        padding = op.get_attr('padding')
+        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
+        data_format = op.get_attr('data_format')
+        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
+        dx = nn_ops.conv2d_backprop_input(
+               shape_0,
+               op.inputs[1],
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw = nn_ops.conv2d_backprop_filter(
+               op.inputs[0],
+               shape_1,
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw_t = tf.transpose(
+            dw,
+            (2, 3, 0, 1))
+        dw_symm_t = (0.5) * (dw_t + tf.transpose(
+            dw_t,
+            (1, 0, 2, 3)))
+        dw_symm = tf.transpose(
+            dw_symm_t,
+            (2, 3, 0, 1))
+        return dx, dw_symm
+except Exception, e:
+    print str(e)
+    print 'Already imported SymmetricConv.'
 
 
 # Dependency for symmetric weight ops is in models/layers/ff.py
@@ -32,9 +74,11 @@ def auxilliary_variables():
         'gamma': False,  # Scale P
         'delta': False,  # Scale Q
         'xi': False,  # Scale X
+        'vgg_extentions': 3,
+        'dense_connections': False,
         'multiplicative_excitation': True,
         'learn_crf_spatial': False,
-        'rectify_weights': True  # +/- rectify weights or activities
+        'rectify_weights': False  # +/- rectify weights or activities
     }
 
 
@@ -97,12 +141,13 @@ class ContextualCircuit(object):
             self.q_shape = [self.SRF, self.SRF, self.k, self.k]
             self.u_shape = [self.SRF, self.SRF, self.k, 1]
             self.p_shape = [self.SSF_ext, self.SSF_ext, self.k, self.k]
+        if self.vgg_extentions > 1:
+            self.p_shape[0] /= self.vgg_extentions
+            self.p_shape[1] /= self.vgg_extentions
         self.i_shape = [self.gate_filter, self.gate_filter, self.k, self.k]
         self.o_shape = [self.gate_filter, self.gate_filter, self.k, self.k]
         self.bias_shape = [1, 1, 1, self.k]
 
-        if self.association_field:
-            self.p_shape = [self.SSF_ext, self.SSF_ext, self.k, self.k]
         self.tuning_params = ['Q', 'P']  # Learned connectivity
         self.tuning_shape = [1, 1, self.k, self.k]
 
@@ -257,17 +302,36 @@ class ContextualCircuit(object):
             p_array = np.zeros_like(p_array).astype(np.float32)
 
         # Association field is fully learnable
-        if self.association_field and 'P' not in self.lesions:
-            setattr(
-                self,
-                self.weight_dict['P']['r']['weight'],
-                tf.get_variable(
-                    name=self.weight_dict['P']['r']['weight'],
-                    dtype=self.dtype,
-                    initializer=initialization.xavier_initializer(
-                        shape=self.p_shape,
-                        uniform=self.normal_initializer),
-                    trainable=True))
+        if 'P' not in self.lesions and self.association_field:
+            if self.vgg_extentions <= 1:
+                setattr(
+                    self,
+                    self.weight_dict['P']['r']['weight'],
+                    tf.get_variable(
+                        name=self.weight_dict['P']['r']['weight'],
+                        dtype=self.dtype,
+                        initializer=initialization.xavier_initializer(
+                            shape=self.p_shape,
+                            uniform=self.normal_initializer),
+                        trainable=True))
+            else:
+                for pidx in range(self.vgg_extentions):
+                    if pidx == 0:
+                        it_key = self.weight_dict['P']['r']['weight']
+                    else:
+                        self.weight_dict[
+                            'P']['r']['weight_%s' % pidx] = 'p_r_%s' % pidx
+                        it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
+                    setattr(
+                        self,
+                        it_key,
+                        tf.get_variable(
+                            name=it_key,
+                            dtype=self.dtype,
+                            initializer=initialization.xavier_initializer(
+                                shape=self.p_shape,
+                                uniform=self.normal_initializer),
+                            trainable=True))
         else:
             setattr(
                 self,
@@ -509,6 +573,18 @@ class ContextualCircuit(object):
                 dropout),  # zone-out dropout mask
             tf.float32)
 
+    def process_p(self, data, key, rectification):
+        """Wrapper for surorund operations."""
+        p_weights = self[key]
+        if self.rectify_weights:
+            p_weights = rectification(p_weights, 0)
+        P = self.conv_2d_op(
+            data=data,
+            weight_key=key,
+            weights=p_weights,
+            symmetric_weights=self.symmetric_weights)
+        return P
+
     def full(self, i0, O, I):
         """Published CM with learnable weights.
 
@@ -521,15 +597,31 @@ class ContextualCircuit(object):
 
         # Circuit input
         if self.association_field:
-            p_weights = self[
-                self.weight_dict['P']['r']['weight']]
-            if self.rectify_weights:
-                p_weights = tf.minimum(p_weights, 0)
-            P = self.conv_2d_op(
-                data=I,
-                weight_key=self.weight_dict['P']['r']['weight'],
-                weights=p_weights,
-                symmetric_weights=self.symmetric_weights)
+            if self.vgg_extentions > 1:
+                previous_P = []
+                for pidx in range(self.vgg_extentions):
+                    if pidx == 0:
+                        it_key = self.weight_dict['P']['r']['weight']
+                        P = self.process_p(
+                            data=I,
+                            key=it_key,
+                            rectification=tf.minimum)
+                    else:
+                        if self.dense_connections:
+                            previous_P += [P]
+                        it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
+                        P = self.process_p(
+                            data=P,
+                            key=it_key,
+                            rectification=tf.minimum)
+                        if self.dense_connections:
+                            for dense_p in previous_P:
+                                P = P + dense_p
+            else:
+                P = self.process_p(
+                    data=I,
+                    key=self.weight_dict['P']['r']['weight'],
+                    rectification=tf.minimum)
         else:
             P = self.conv_2d_op(
                 data=self.apply_tuning(
@@ -541,7 +633,7 @@ class ContextualCircuit(object):
                 weight_key=self.weight_dict['P']['r']['weight'])
 
         # P inhibition on input
-        if self.association_field and not self.rectify_weights:
+        if not self.rectify_weights:
             P = tf.minimum(P, 0)
 
         if self.learn_crf_spatial:
@@ -602,28 +694,34 @@ class ContextualCircuit(object):
 
         # Circuit output
         if self.association_field:
-            # Ensure that CRF for association field is masked
-            p_weights = self[
-                self.weight_dict['P']['r']['weight']]
-            if self.rectify_weights:
-                p_weights = tf.maximum(p_weights, 0)
-            P = self.conv_2d_op(
-                data=I,
-                weight_key=self.weight_dict['P']['r']['weight'],
-                weights=p_weights,
-                symmetric_weights=True)
-        else:
-            P = self.conv_2d_op(
-                data=self.apply_tuning(
+            if self.vgg_extentions > 1:
+                previous_P = []
+                for pidx in range(self.vgg_extentions):
+                    if pidx == 0:
+                        it_key = self.weight_dict['P']['r']['weight']
+                        P = self.process_p(
+                            data=I,
+                            key=it_key,
+                            rectification=tf.maximum)
+                    else:
+                        if self.dense_connections:
+                            previous_P += [P]
+                        it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
+                        P = self.process_p(
+                            data=P,
+                            key=it_key,
+                            rectification=tf.maximum)
+                        if self.dense_connections:
+                            for dense_p in previous_P:
+                                P = P + dense_p
+            else:
+                P = self.process_p(
                     data=I,
-                    wm='P',
-                    nl=self.post_tuning_nl,
-                    rectify=tf.maximum),
-                weight_key=self.weight_dict['P']['r']['weight']
-            )
+                    key=self.weight_dict['P']['r']['weight'],
+                    rectification=tf.maximum)
 
         # P excitation on output
-        if self.learn_crf_spatial and not self.rectify_weights:
+        if not self.rectify_weights:
             P = tf.maximum(P, 0)
 
         # CRF excitation

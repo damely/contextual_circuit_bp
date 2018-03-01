@@ -20,13 +20,14 @@ class data_processing(object):
         self.processed_images = 'processed_images'
         self.config = Config()
         self.im_size = [321, 481, 3]
-        self.model_input_image_size = [300, 480, 3]  # [107, 160, 3]
+        self.model_input_image_size = [107, 160, 3]  # [107, 160, 3]
         self.output_size = [321, 481, 1]
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
         self.score_metric = 'pearson'
         self.aux_scores = ['f1']
         self.store_z = True
+        self.input_normalization = 'zscore'
         self.preprocess = [None]  # ['resize_nn']
         self.folds = {
             'train': 'train',
@@ -145,7 +146,6 @@ class data_processing(object):
                         if transpose_labels:
                             ip_lab = np.swapaxes(ip_lab, 0, 1)
                         mean_labs += [ip_lab]
-
                     mean_lab = np.asarray(mean_labs).mean(0)
                     out_lab = os.path.join(
                         proc_dir, '%s.npy' % it_label.split('.')[0])
@@ -160,4 +160,15 @@ class data_processing(object):
                     raise NotImplementedError
             labels[k] = label_vec
             new_files[k] = file_vec
+            np.savez(
+                os.path.join(
+                    self.config.data_root,
+                    self.name,
+                    self.images_dir,
+                    fold,
+                    'file_paths'
+                ),
+                labels=labels,
+                files=new_files)
         return labels, new_files
+

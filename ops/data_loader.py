@@ -442,6 +442,30 @@ def read_and_decode(
     return image, label
 
 
+def placeholder_image_augmentations(
+        images,
+        model_input_image_size,
+        data_augmentations,
+        batch_size,
+        labels=None):
+    """Apply augmentations to placeholder data."""
+    split_images = tf.split(images, batch_size, axis=0)
+    if labels is not None:
+        split_labels = tf.split(labels, batch_size, axis=0)
+    else:
+        split_labels = [None] * batch_size
+    aug_images, aug_labels = [], []
+    for idx in range(batch_size):
+        aug_image, aug_label = image_augmentations(
+            image=tf.squeeze(split_images[idx], axis=0),
+            data_augmentations=data_augmentations,
+            model_input_image_size=model_input_image_size,
+            label=tf.squeeze(split_labels[idx], axis=0))
+        aug_images += [aug_image]
+        aug_labels += [aug_label]
+    return tf.stack(aug_images), tf.stack(aug_labels)
+
+
 def inputs(
         dataset,
         batch_size,
