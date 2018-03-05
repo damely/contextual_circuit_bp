@@ -6,18 +6,18 @@ import numpy as np
 def crop_center(img, crop_size):
     """Center crop images."""
     im_shape = img.shape
-    x, y = im_shape[:2]
-    cx, cy = crop_size[:2]
-    x_check = x < cx
-    y_check = y < cy
-    if np.any([x_check, y_check]):
+    h, w = im_shape[:2]
+    ch, cw = crop_size[:2]
+    h_check = h <= ch
+    w_check = w <= cw
+    if h_check or w_check:
         return resize(img, crop_size)
-    startx = x // 2 - (cx // 2)
-    starty = y // 2 - (cy // 2)
+    starth = h // 2 - (ch // 2)
+    startw = w // 2 - (cw // 2)
     if len(im_shape) == 2:
-        return img[starty:starty + cy, startx:startx + cx]
+        return img[starth:starth + ch, startw:startw + cw]
     elif len(im_shape) == 3:
-        return img[starty:starty + cy, startx:startx + cx, :]
+        return img[starth:starth + ch, startw:startw + cw, :]
     else:
         raise NotImplementedError(
             'Cannot handle im size of %s' % len(im_shape))
@@ -25,7 +25,7 @@ def crop_center(img, crop_size):
 
 def resize(img, new_size):
     """Resize image."""
-    return cv2.resize(img, tuple(new_size[:2]))
+    return cv2.resize(img, tuple(new_size[:2]), interpolation=cv2.INTER_CUBIC)
 
 
 def pad_square(img):

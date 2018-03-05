@@ -29,6 +29,8 @@ class eRF_calculator(object):
                 print '-------Net summary-------'
             if r_i is None:
                 r_i = 1  # Image RF size
+            if isinstance(r_i, dict):
+                r_i = r_i.get('r_i', 1)
             currentLayer = {
                 'n_i': imsize,
                 'j_i': 1,

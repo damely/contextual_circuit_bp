@@ -75,6 +75,10 @@ def metric_interpreter(metric, pred, labels):
             return f1(
                 pred=pred,
                 labels=labels)
+        elif metric == 'map' or metric == 'mAP':
+            return mAP(
+                pred=pred,
+                labels=labels)
         elif metric == 'precision':
             return precision(
                 pred=pred,
@@ -83,8 +87,12 @@ def metric_interpreter(metric, pred, labels):
             return recall(
                 pred=pred,
                 labels=labels)
-        elif metric == 'auc':
-            return auc(
+        elif metric == 'roc_auc':
+            return roc_auc(
+                pred=pred,
+                labels=labels)
+        elif metric == 'pr_auc':
+            return pr_auc(
                 pred=pred,
                 labels=labels)
         else:
@@ -138,17 +146,46 @@ def f1(pred, labels, force_dtype=tf.float32, eps=1e-12):
     return tf.reduce_mean(f1)
 
 
-def auc(pred, labels, force_dtype=tf.float32):
+def roc_auc(pred, labels, force_dtype=tf.float32):
+    """Area under the ROC curve."""
     if force_dtype:
         if pred.dtype != force_dtype:
             pred = tf.cast(pred, force_dtype)
         if labels.dtype != force_dtype:
             labels = tf.cast(labels, force_dtype)
-    adj_pred = tf.round(tf.nn.sigmoid(pred))
     auc, _ = tf.metrics.auc(
-        predictions=adj_pred,
-        labels=labels)
+        predictions=pred,
+        labels=labels,
+        curve='ROC')
     return auc
+
+
+def pr_auc(pred, labels, force_dtype=tf.float32):
+    """Area under the PR curve."""
+    if force_dtype:
+        if pred.dtype != force_dtype:
+            pred = tf.cast(pred, force_dtype)
+        if labels.dtype != force_dtype:
+            labels = tf.cast(labels, force_dtype)
+    auc, _ = tf.metrics.auc(
+        predictions=pred,
+        labels=labels,
+        curve='PR')
+    return auc
+
+
+def mAP(pred, labels):
+    """Mean average precision. Tuned for contour detection."""
+    if len(pred.get_shape()) > 3:
+        pred = tf.contrib.layers.flatten(pred)
+    if len(labels.get_shape()) > 3:
+        labels = tf.contrib.layers.flatten(labels)
+    labels = tf.cast(tf.greater(labels, 0), tf.int64)
+    return tf.reduce_mean(
+        tf.metrics.sparse_average_precision_at_k(
+            labels=labels,
+            predictions=pred,
+            k=1)[0])
 
 
 def sigmoid_accuracy(pred, labels, force_dtype=tf.float32):

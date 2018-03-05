@@ -236,11 +236,11 @@ def image_augmentations(
             image = resize_image_label(
                 im=image,
                 model_input_image_size=model_input_image_size,
-                f='bilinear')
+                f='bicubic')
             label = resize_image_label(
                 im=label,
                 model_input_image_size=model_input_image_size,
-                f='bilinear')
+                f='bicubic')
             print 'Applying bilinear resize.'
         elif 'resize_nn_image_label' in data_augmentations and im_size_check:
             assert len(image.get_shape()) == 3, '4D not implemented yet.'

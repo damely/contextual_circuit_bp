@@ -16,14 +16,15 @@ class data_processing(object):
         self.processed_images = 'processed_images'
         self.config = Config()
         self.im_size = [256, 256, 3]
-        self.model_input_image_size = [256, 256, 3]  # [107, 160, 3]
+        self.model_input_image_size = [128, 128, 3]  # [107, 160, 3]
         self.output_size = [256, 256, 1]
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
         self.score_metric = 'pearson'
         self.aux_scores = ['f1']
-        self.store_z = True        
-        self.preprocess = ['crop_center']  # ['resize_nn']
+        self.store_z = True
+        self.input_normalization = 'zscore'
+        self.preprocess = ['crop_center_resize']  # ['resize_nn']
         self.folds = {
             'train': 'training.txt',
             'val': 'validation.txt'

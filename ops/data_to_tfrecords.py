@@ -29,12 +29,18 @@ def preprocess_image(image, preprocess, im_size):
     """Preprocess image files before encoding in TFrecords."""
     if 'crop_center' in preprocess:
         image = image_processing.crop_center(image, im_size)
+    elif 'crop_center_resize' in preprocess:
+        im_shape = image.shape
+        min_shape = np.min(im_shape[:2])
+        crop_im_size = [min_shape, min_shape, im_shape[-1]]
+        image = image_processing.crop_center(image, crop_im_size)
+        image = image_processing.resize(image, im_size)
     elif 'resize' in preprocess:
         image = image_processing.resize(image, im_size)
     elif 'pad_resize' in preprocess:
         image = image_processing.pad_square(image)
         image = image_processing.resize(image, im_size)
-    return image
+    return image.astype(np.float32)
 
 
 def encode_tf(encoder, x):

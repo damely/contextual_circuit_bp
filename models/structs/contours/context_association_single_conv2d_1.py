@@ -17,28 +17,17 @@ layer_structure = [
             'SRF': 6,
             'CRF_excitation': 6, 
             'CRF_inhibition': 6,
-            # 'SSN': 24,
-            # 'SSF': 24
-            # 'SSN': [8, 8, 8, 3],  # Vanilla VGG-style
-            # 'SSF': [8, 8, 8, 3]
-            'SSN': [6, 6, 6],  # Atrous VGG-style
-            'SSF': [6, 6, 6]
+            'SSN': 24,
+            'SSF': 24
         },
-        # 'hardcoded_erfs': {
-        #     'SRF': 11,
-        #     'CRF_excitation': 6, 
-        #     'CRF_inhibition': 6,
-        #     'SSN': 30,
-        #     'SSF': 30
-        # },
         'normalization': ['contextual_single_ecrf'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 7,
+            'timesteps': 1,
             'pre_batchnorm': False,
             'post_batchnorm': False,
-            'dense_connections': True,
-            'atrous_convolutions': 2,
+            'vgg_extentions': 1,
+            'dense_connections': False,
             'association_field': True,
             'gru_gates': False,
             'regularization_targets': {  # Modulate sparsity

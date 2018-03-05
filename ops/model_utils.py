@@ -36,6 +36,8 @@ class model_class(object):
         self.share_vars = ['training', 'output_size']
         self.layer_vars = {k: self[k] for k in self.share_vars}
         input_normalization = kwargs.get('input_normalization', 'mean')
+        if input_normalization is None:
+            input_normalization = 'mean'
         self.input_normalization = input_normalization
 
     def build(

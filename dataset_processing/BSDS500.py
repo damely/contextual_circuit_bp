@@ -24,7 +24,7 @@ class data_processing(object):
         self.output_size = [321, 481, 1]
         self.label_size = self.output_size
         self.default_loss_function = 'pearson'
-        self.score_metric = 'pearson'
+        self.score_metric = 'mAP'  # 'pearson'
         self.aux_scores = ['f1']
         self.store_z = True
         self.input_normalization = 'zscore'

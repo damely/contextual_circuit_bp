@@ -56,7 +56,7 @@ def auxilliary_variables():
         'lesions': [None],  # ['Q', 'T', 'P', 'U'],
         'dtype': tf.float32,
         'return_weights': True,
-        'hidden_init': 'random',
+        'hidden_init': 'zeros',
         'tuning_init': 'cov',  # TODO: Initialize tuning as input covariance
         'association_field': False,
         'tuning_nl': tf.nn.relu,

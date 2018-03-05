@@ -32,6 +32,7 @@ class experiments():
             'validation_iters': 5000,  # How often to evaluate validation.
             'num_validation_evals': 100,  # How many validation batches.
             'top_n_validation': 0,  # Set to 0 to save all checkpoints.
+            'max_to_keep': 10,  # Max checkpoints to keep
             'early_stop': False,  # Stop training if the loss stops improving.
             'save_weights': False,  # Save model weights on validation evals.
             'optimizer_constraints': None,  # A {var name: bound} dictionary.
@@ -117,10 +118,28 @@ class experiments():
             # 't_t': [1e-2, 1e-1, 1],
             'timesteps': [3],
             'model_struct': [
-                os.path.join(
-                     model_folder, 'context_association_single_conv2d'),
                 # os.path.join(
-                #     model_folder, 'context_association_full_full_conv2d'),
+                #      model_folder, 'context_association_single_conv2d_1'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_2'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_3'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_4'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_5'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_6'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_7'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_8'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_9'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_10'),
+                os.path.join(
+                    model_folder, 'context_association_single_conv2d'),
                 # os.path.join(
                 #     model_folder, 'conv2d'),
                 # os.path.join(
@@ -132,7 +151,68 @@ class experiments():
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
-            'resize_nn_image_label'
+            'resize_image_label'
+            # 'random_crop_image_label',
+            # 'lr_flip_image_label',
+            # 'ud_flip_image_label'
+            ]]
+        # exp['val_augmentations'] = [['center_crop_image_label']]
+        exp['batch_size'] = 10  # Train/val batch size.
+        exp['epochs'] = 1000
+        exp['save_weights'] = True
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 10
+        exp['loss_weights']
+        # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
+        return exp
+
+    def places_contours(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'contours'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [1e-3],
+            'loss_function': ['pearson'],
+            'optimizer': ['nadam'],
+            # 'q_t': [1e-3, 1e-1],
+            # 'p_t': [1e-2, 1e-1, 1],
+            # 't_t': [1e-2, 1e-1, 1],
+            'timesteps': [3],
+            'model_struct': [
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_1'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_2'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_3'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_4'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_5'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_6'),
+                os.path.join(
+                     model_folder, 'context_association_single_conv2d_7'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_8'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_9'),
+                # os.path.join(
+                #      model_folder, 'context_association_single_conv2d_10'),
+                # os.path.join(
+                #     model_folder, 'context_association_full_full_conv2d'),
+                os.path.join(
+                    model_folder, 'conv2d'),
+                # os.path.join(
+                #     model_folder, 'conv2d_equal'),
+                # os.path.join(
+                #     model_folder, 'conv2d_3l'),
+            ],
+            'dataset': ['places_boundaries']  # ['BSDS500']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['data_augmentations'] = [[
+            'resize_image_label'
             # 'random_crop_image_label',
             # 'lr_flip_image_label',
             # 'ud_flip_image_label'
@@ -382,36 +462,5 @@ class experiments():
         ]
         exp['pr_curve'] = True
         exp['save_validation_predictions'] = True
-        return exp
-
-
-    def MULTIALLEN_VISpvmvqmttlENqiDiSS(self):
-        """MULTIALLEN_VISpvmvqmttlENqiDiSS ST multi-experiment creation."""
-        model_folder = 'MULTIALLEN_VISpvmvqmttlENqiDiSS'
-        exp = {
-            'experiment_name': ['MULTIALLEN_VISpvmvqmttlENqiDiSS'],
-            'lr': [3e-4],
-            'loss_function': ['pearson'],
-            'optimizer': ['adam'],
-            'model_struct': [
-                # os.path.join(model_folder, 'complete_sep_conv3d'),
-                # os.path.join(model_folder, 'time_sep_conv3d'),
-                os.path.join(model_folder, 'gru2d'),
-                os.path.join(model_folder, 'alexnet_gru2d'),
-                os.path.join(model_folder, 'sgru2d'),
-                os.path.join(model_folder, 'alexnet_sgru2d')
-            ],
-            'dataset': ['MULTIALLEN_VISpvmvqmttlENqiDiSS']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['resize']]
-        exp['epochs'] = 500
-        exp['validation_iters'] = 200  # Check validation every N steps of training
-        exp['num_validation_evals'] = 225  # Corresponds to a full movie
-        exp['batch_size'] = 10  # Train/val batch size.
-        # exp['normalize_labels'] = 'zscore'  # Not currently implemented
-        exp['save_weights'] = True
-        exp['dataloader_override'] = True
-        exp['tensorboard_images'] = False
         return exp
 
