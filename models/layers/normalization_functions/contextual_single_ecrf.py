@@ -69,14 +69,14 @@ def auxilliary_variables():
         'normal_initializer': False,
         'symmetric_weights': True,  # Lateral weight sharing
         'gru_gates': False,  # True input reset gate vs. integration gate
-        'post_tuning_nl': False,  # Apply nonlinearity to crf/ecrf activity
+        'post_tuning_nl': tf.nn.relu,  # Nonlinearity on crf activity
         'gate_filter': 1,  # Gate kernel size
         'zeta': False,  # Scale I
         'gamma': False,  # Scale P
         'delta': False,  # Scale Q
         'xi': False,  # Scale X
         'integration_type': 'mely',
-        'dense_connections': True,  # Dense skip connections on VGG-style convs
+        'dense_connections': False,  # Dense connections on VGG-style convs
         'atrous_convolutions': False,  # Non-zero integer controls rate
         'multiplicative_excitation': True,  # Replace additive w/ mult
         'rectify_weights': False  # +/- rectify weights or activities

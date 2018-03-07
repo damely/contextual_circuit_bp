@@ -27,6 +27,8 @@ def fixed_len_feature(length=[], dtype='int64'):
     """Features for reading TFRecords."""
     if dtype == 'int64':
         return tf.FixedLenFeature(length, tf.int64)
+    elif dtype == 'int32':
+        return tf.FixedLenFeature(length, tf.int32)
     elif dtype == 'string':
         return tf.FixedLenFeature(length, tf.string)
     elif dtype == 'float':

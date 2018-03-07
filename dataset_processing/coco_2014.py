@@ -27,13 +27,13 @@ class data_processing(object):
         }
         self.targets = {
             'image': tf_fun.bytes_feature,
-            'label': tf_fun.int64_feature
+            'label': tf_fun.int32_feature
         }
         self.tf_dict = {
             'image': tf_fun.fixed_len_feature(dtype='string'),
             'label': tf_fun.fixed_len_feature(
                 length=self.output_size[0],
-                dtype='int64')
+                dtype='int32')
         }
         self.tf_reader = {
             'image': {
@@ -41,7 +41,7 @@ class data_processing(object):
                 'reshape': self.im_size
             },
             'label': {
-                'dtype': tf.int64,
+                'dtype': tf.int32,
                 'reshape': None
             }
         }
@@ -89,4 +89,3 @@ class data_processing(object):
                     pass
             labels[k] = it_labels
         return labels
-
