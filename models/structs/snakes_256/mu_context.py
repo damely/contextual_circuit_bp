@@ -11,9 +11,9 @@ layer_structure = [
         'stride': [1, 2, 2, 1],
         'filter_size': [7],
         'hardcoded_erfs': {
-            'SRF': 3,
-            'CRF_excitation': 3, 
-            'CRF_inhibition': 3,
+            'SRF': 4,
+            'CRF_excitation': 4, 
+            'CRF_inhibition': 4,
             'SSN': 20,  # [11, 11, 11],
             'SSF': 20, # [11, 11, 11]  # 30
             # 'SSN': [8, 8, 8, 3],  # Vanilla VGG-style

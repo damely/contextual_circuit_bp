@@ -4,7 +4,7 @@ layer_structure = [
     {
         'layers': ['alexnet_conv'],
         # 'weights': [32],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours.npy',
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
         'alexnet_layer': 's1',
         # 'alexnet_npy': '/media/data_cifs/vveeraba/contextual_circuit_bp/alexnet_cc.npy',
         # 'alexnet_layer': 'conv1_gabors',
@@ -15,13 +15,13 @@ layer_structure = [
         'init_bias': True,
         # 'rescale': True,
         'names': ['conv1'],
-        'filter_size': [11],
+        'filter_size': [7],
         'hardcoded_erfs': {
-            'SRF': 11,
-            'CRF_excitation': 11, 
-            'CRF_inhibition': 11,
-            'SSN': 30,  # [11, 11, 11],
-            'SSF': 30, # [11, 11, 11]  # 30
+            'SRF': 6,
+            'CRF_excitation': 6, 
+            'CRF_inhibition': 6,
+            'SSN': 24,  # [11, 11, 11],
+            'SSF': 24, # [11, 11, 11]  # 30
             # 'SSN': [8, 8, 8, 3],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
             # 'SSN': [6, 6, 6],  # Atrous VGG-style

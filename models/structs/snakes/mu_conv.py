@@ -4,7 +4,7 @@ layer_structure = [
     {
         'layers': ['alexnet_conv'],
         # 'weights': [32],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours.npy',
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
         'alexnet_layer': 's1',
         # 'alexnet_npy': '/media/data_cifs/vveeraba/contextual_circuit_bp/alexnet_cc.npy',
         # 'alexnet_layer': 'conv1_gabors',
@@ -14,7 +14,7 @@ layer_structure = [
         'trainable': False,
         # 'xi': True,  # If FF drive is not trainable
         'names': ['conv1'],
-        'filter_size': [11],
+        'filter_size': [7],
         'activation': ['relu'],
         'activation_target': ['post'],
     },
