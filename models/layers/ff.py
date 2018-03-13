@@ -647,6 +647,20 @@ class ff(object):
         """Skip a filter operation on this layer."""
         return context, act
 
+    def global_pool(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Global avg pool. TODO: move to pool class."""
+        gap = tf.reduce_mean(act, reduction_indices=[1, 2], keep_dims=True)
+        gap = tf.squeeze(gap)
+        return context, gap
+
     def pool(
             self,
             context,

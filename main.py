@@ -417,7 +417,7 @@ def main(
             if config.tensorboard_images:
                 if len(train_images.get_shape()) == 4:
                     tf_fun.image_summaries(train_images, tag='Training images')
-                if len(train_labels.get_shape()) > 2:
+                if (np.asarray(train_labels.get_shape().as_list()) > 1).sum() > 2:
                     tf_fun.image_summaries(
                         train_labels,
                         tag='Training_targets')
@@ -519,7 +519,7 @@ def main(
                     tf_fun.image_summaries(
                         val_images,
                         tag='Validation')
-                if len(val_labels.get_shape()) > 2:
+                if (np.asarray(val_labels.get_shape().as_list()) > 1).sum() > 2:
                     tf_fun.image_summaries(
                         val_labels,
                         tag='Validation_targets')
@@ -587,7 +587,8 @@ def main(
         'train_images': train_images,
         'train_labels': train_labels,
         'train_op': train_op,
-        'train_scores': train_scores
+        'train_scores': train_scores,
+        'conv': model.conv1 
     }
     val_dict = {
         'val_loss': val_loss,

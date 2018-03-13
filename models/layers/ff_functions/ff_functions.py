@@ -273,19 +273,26 @@ def alexnet_conv_layer(
     """2D convolutional layer."""
     assert aux is not None, 'Pass the location of alexnet weights.'
     assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+    if 'stride' in aux.keys():
+        stride = aux['stride']
     train_alexnet, init_bias = True, False
     if 'trainable' in aux.keys():
         train_alexnet = aux['trainable']
     if 'init_bias' in aux.keys():
         init_bias = aux['init_bias']
+    if 'rescale' in aux.keys():
+        rescale = aux['rescale']
+    else:
+        rescale = False
     alexnet_weights = np.load(aux['alexnet_npy']).item()
     alexnet_key = aux['alexnet_layer']
     alexnet_filter, alexnet_bias = alexnet_weights[alexnet_key]
     with tf.variable_scope(name):
         if in_channels is None:
             in_channels = int(bottom.get_shape()[-1])
-        assert out_channels == alexnet_filter.shape[-1],\
-            'Set weights = %s.' % alexnet_filter.shape[-1]
+        if out_channels != alexnet_filter.shape[-1]:
+            out_channels = alexnet_filter.shape[-1]
+            print 'Set weights = %s.' % alexnet_filter.shape[-1]
         if in_channels < alexnet_filter.shape[-2] and in_channels == 1:
             alexnet_filter = np.mean(alexnet_filter, axis=2, keepdims=True)
         elif in_channels < alexnet_filter.shape[-2]:
@@ -295,8 +302,14 @@ def alexnet_conv_layer(
             name=name + "_filters",
             initializer=alexnet_filter,
             trainable=train_alexnet)
+        if rescale:
+            rescaler = tf.get_variable(
+                name=name + "_scale",
+                initializer=tf.truncated_normal([out_channels], .0, .001),
+                trainable=True)
+            filters = filters * rescaler
         self.var_dict[(name, 0)] = filters
-        if init_bias:
+        if init_bias or len(alexnet_bias) == 0:
             alexnet_bias = tf.truncated_normal([out_channels], .0, .001)
         self, biases = get_var(
             self=self,

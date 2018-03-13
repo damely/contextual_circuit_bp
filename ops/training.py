@@ -69,20 +69,24 @@ def training_loop(
         val_dict = dict(
             val_dict,
             **weight_dict)
-        # weight_dict = {
-        #     k[0]: v
-        #       for k, v in train_model.var_dict.iteritems() if k[1] == 0}
-        # train_dict = dict(
-        #     train_dict,
-        #     **weight_dict)
+        weight_dict = {
+            k[0]: v
+              for k, v in train_model.var_dict.iteritems() if k[1] == 0}
+        train_dict = dict(
+            train_dict,
+            **weight_dict)
     try:
         while not coord.should_stop():
             start_time = time.time()
             train_vars = sess.run(train_dict.values())
             it_train_dict = {k: v for k, v in zip(
                 train_dict.keys(), train_vars)}
+            if step == 10:
+                np.save('ff_weights', it_train_dict['conv1'])
             duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
+            print 'WARNING: FIX ACCURACY'
+            it_train_dict['train_accuracy_0'] = np.mean(it_train_dict['train_labels'].ravel() == np.argmax(it_train_dict['train_scores'], axis=-1))
             train_accs[step] = it_train_dict['train_accuracy_0']
             timesteps[step] = duration
             if train_aux_check:
@@ -222,7 +226,7 @@ def training_loop(
                         break
             else:
                 # Training status
-                format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; '
+                format_str = ('%s: step %d, loss = %.5f (%.1f examples/sec; '
                               '%.3f sec/batch) | Training accuracy = %s')
                 print format_str % (
                     datetime.now(),

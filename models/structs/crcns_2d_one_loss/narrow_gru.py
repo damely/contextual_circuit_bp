@@ -30,8 +30,8 @@ output_structure = [
     {
         'flatten': [True],
         'flatten_target': ['pre'],
-        'layers': ['multi_fc'],
-        'weights': [[2, 3]],
+        'layers': ['fc'],
+        'weights': [2],
         'names': ['fc3'],
     }
 ]

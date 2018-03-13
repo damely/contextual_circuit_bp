@@ -162,7 +162,6 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        exp['loss_weights']
         # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
         return exp
 
@@ -223,7 +222,6 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        exp['loss_weights']
         # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
         return exp
 
@@ -463,3 +461,70 @@ class experiments():
         exp['pr_curve'] = True
         exp['save_validation_predictions'] = True
         return exp
+
+    def snakes(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'snakes'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [1e-3],
+            'loss_function': ['cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                # os.path.join(
+                #     model_folder, 'context_association_single_conv2d'),
+                # os.path.join(
+                #     model_folder, 'conv2d'),
+                os.path.join(
+                    model_folder, 'mu_context'),
+                # os.path.join(
+                #     model_folder, 'mu_conv'),
+            ],
+            'dataset': ['contours_gilbert_600']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['data_augmentations'] = [['grayscale_slice', 'center_crop']]  # , 'left_right', 'up_down', 'rotate']]
+        exp['val_augmentations'] = [['grayscale_slice', 'center_crop']]  # , 'left_right', 'up_down', 'rotate']]
+        exp['batch_size'] = 5  # Train/val batch size.
+        exp['epochs'] = 1000
+        exp['save_weights'] = True
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 200
+        exp['shuffle_val'] = True
+        return exp
+
+    def snakes_256(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'snakes_256'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [1e-3],
+            'loss_function': ['cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                os.path.join(
+                    model_folder, 'mu_context'),
+                os.path.join(
+                    model_folder, 'mu_conv'),
+                os.path.join(
+                    model_folder, 'mu_conv_2'),
+                os.path.join(
+                    model_folder, 'mu_conv_3'),
+                os.path.join(
+                    model_folder, 'mu_conv_2_pool'),
+                os.path.join(
+                    model_folder, 'mu_conv_3_pool'),
+            ],
+            'dataset': ['contours_gilbert_256']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['data_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
+        exp['val_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
+        exp['batch_size'] = 20  # Train/val batch size.
+        exp['epochs'] = 100
+        exp['save_weights'] = True
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 10  # 200
+        exp['shuffle_val'] = True
+        return exp
+

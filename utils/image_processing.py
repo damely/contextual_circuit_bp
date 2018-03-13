@@ -25,7 +25,10 @@ def crop_center(img, crop_size):
 
 def resize(img, new_size):
     """Resize image."""
-    return cv2.resize(img, tuple(new_size[:2]), interpolation=cv2.INTER_CUBIC)
+    return cv2.resize(
+        img,
+        tuple(new_size[:2]),
+        interpolation=cv2.INTER_CUBIC)
 
 
 def pad_square(img):

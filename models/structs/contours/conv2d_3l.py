@@ -35,7 +35,7 @@ output_structure = [
         'weights': [1],
         'names': ['fc4'],
         'filter_size': [1],
-        # 'activation': ['sigmoid'],
-        # 'activation_target': ['post']
+        'activation': ['sigmoid'],
+        'activation_target': ['post']
     }
 ]

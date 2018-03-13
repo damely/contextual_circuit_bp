@@ -212,8 +212,10 @@ def mean_score(pred, labels, force_dtype=tf.float32):
 def class_accuracy(pred, labels):
     """Accuracy of 1/n*sum(pred_i == label_i)."""
     return tf.reduce_mean(
-        tf.to_float(tf.equal(tf.argmax(pred, 1), tf.cast(
-            labels, dtype=tf.int64))))
+        tf.to_float(
+            tf.equal(
+                tf.argmax(pred, 1),
+                tf.squeeze(tf.cast(labels, dtype=tf.int64)))))
 
 
 def l2_score(pred, labels):

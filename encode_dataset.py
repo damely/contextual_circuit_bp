@@ -21,6 +21,10 @@ def encode_dataset(dataset):
         store_z = data_proc.store_z
     else:
         store_z = False
+    if hasattr(data_proc, 'normalize_im'):
+        normalize_im = data_proc.normalize_im
+    else:
+        normalize_im = False
     ds_name = os.path.join(config.tf_records, data_proc.name)
     data_to_tfrecords(
         files=files,
@@ -30,7 +34,8 @@ def encode_dataset(dataset):
         im_size=im_size,
         label_size=label_size,
         preprocess=preproc_list,
-        store_z=store_z)
+        store_z=store_z,
+        normalize_im=normalize_im)
 
 
 if __name__ == '__main__':

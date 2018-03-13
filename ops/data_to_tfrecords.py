@@ -6,12 +6,19 @@ from tqdm import tqdm
 from utils import image_processing
 
 
-def load_image(f, im_size, reshape=True):
+def load_image(f, im_size, repeat_image=False):
     """Load image and convert it to a 4D tensor."""
     image = misc.imread(f).astype(np.float32)
-    if len(image.shape) < 3 and reshape:  # Force H/W/C
+    if len(image.shape) < 3 and repeat_image:  # Force H/W/C
         image = np.repeat(image[:, :, None], im_size[-1], axis=-1)
     return image
+
+
+def normalize(im):
+    """Normalize to [0, 1]."""
+    min_im = im.min()
+    max_im = im.max()
+    return (im - min_im) / (max_im - min_im)
 
 
 def create_example(data_dict):
@@ -60,7 +67,9 @@ def data_to_tfrecords(
         im_size,
         label_size,
         preprocess,
-        store_z=False):
+        store_z=False,
+        normalize_im=False,
+        repeat_image=False):
     """Convert dataset to tfrecords."""
     print 'Building dataset: %s' % ds_name
     for idx, ((fk, fv), (lk, lv)) in enumerate(
@@ -80,11 +89,16 @@ def data_to_tfrecords(
                     if '.npy' in it_f:
                         image = np.load(it_f)
                     else:
-                        image = load_image(it_f, im_size).astype(np.float32)
+                        image = load_image(
+                            it_f,
+                            im_size,
+                            repeat_image=repeat_image).astype(np.float32)
                     if len(image.shape) > 1:
                         image = preprocess_image(image, preprocess, im_size)
                 else:
                     image = preprocess_image(it_f, preprocess, im_size)
+                if normalize_im:
+                    image = normalize(image)
                 if store_z:
                     means += [image]
                 else:
@@ -94,7 +108,9 @@ def data_to_tfrecords(
                         label = np.load(it_l)
                     else:
                         label = load_image(
-                            it_l, label_size, reshape=False).astype(np.float32)
+                            it_l,
+                            label_size,
+                            repeat_image=False).astype(np.float32)
                     if len(label.shape) > 1:
                         label = preprocess_image(label, preprocess, label_size)
                 else:

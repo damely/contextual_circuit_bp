@@ -71,15 +71,15 @@ def auxilliary_variables():
         'gru_gates': False,  # True input reset gate vs. integration gate
         'post_tuning_nl': tf.nn.relu,  # Nonlinearity on crf activity
         'gate_filter': 1,  # Gate kernel size
-        'zeta': False,  # Scale I
-        'gamma': False,  # Scale P
-        'delta': False,  # Scale Q
+        'zeta': True,  # Scale I (excitatory state)
+        'gamma': True,  # Scale P
+        'delta': True,  # Scale Q
         'xi': False,  # Scale X
-        'integration_type': 'mely',
+        'integration_type': 'alternate',  # Psych review (mely) or alternate
         'dense_connections': False,  # Dense connections on VGG-style convs
         'atrous_convolutions': False,  # Non-zero integer controls rate
-        'multiplicative_excitation': True,  # Replace additive w/ mult
-        'rectify_weights': False  # +/- rectify weights or activities
+        'multiplicative_excitation': False,  # True,  # Replace additive w/ mult
+        'rectify_weights': True  # +/- rectify weights or activities
     }
 
 
@@ -258,6 +258,16 @@ class ContextualCircuit(object):
             'gamma': {
                 'r': {  # Recurrent state
                     'weight': 'gamma',
+                }
+            },
+            'phi': {
+                'r': {  # Recurrent state
+                    'weight': 'phi',
+                }
+            },
+            'kappa': {
+                'r': {  # Recurrent state
+                    'weight': 'kappa',
                 }
             },
             'delta': {
@@ -473,6 +483,10 @@ class ContextualCircuit(object):
             self.xi = tf.get_variable(name='xi', initializer=w_array)
         else:
             self.xi = tf.constant(1.)
+        if self.multiplicative_excitation:
+            self.kappa = tf.get_variable(name='kappa', initializer=w_array)
+        else:
+            self.kappa = tf.constant(1.)
 
     def conv_2d_op(
             self,
@@ -767,35 +781,6 @@ class ContextualCircuit(object):
                     self.weight_dict['O']['r']['bias']])
         return P, Q, O_update
 
-    def input_integration(self, P, U, I, O, I_update):
-        """Integration on the input."""
-        if self.gru_gates:
-            # GRU_gates applied to I before integration
-            I = I_update * I
-        I_summand = self.recurrent_nl(
-            (self.xi * self.X)
-            - ((self.alpha * O + self.mu) * U)
-            - ((self.beta * O + self.nu) * P))
-        if not self.gru_gates:
-            # Alternatively, forget gates on the input
-            I = (I_update * I) + ((1 - I_update) * I_summand)
-        else:
-            I = I_summand
-        return I
-
-    def output_integration(self, P, Q, I, O, O_update):
-        """Integration on the output."""
-        if self.multiplicative_excitation:
-            # Multiplicative gating I * (P + Q)
-            O_summand = self.recurrent_nl(
-                self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
-        else:
-            # Additive gating I + P + Q
-            O_summand = self.recurrent_nl(
-                self.zeta * I + self.gamma * P + self.delta * Q)
-        O = (O_update * I) + ((1 - O_update) * O_summand)
-        return O
-
     def mely_input_integration(self, P, U, I, O, I_update):
         """Integration on the input."""
         if self.gru_gates:
@@ -818,6 +803,41 @@ class ContextualCircuit(object):
             # Multiplicative gating I * (P + Q)
             O_summand = self.recurrent_nl(
                 self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
+        else:
+            # Additive gating I + P + Q
+            O_summand = self.recurrent_nl(
+                self.zeta * I + self.gamma * P + self.delta * Q)
+        O = (O_update * O) + ((1 - O_update) * O_summand)
+        return O
+
+    def input_integration(self, P, U, I, O, I_update):
+        """Integration on the input."""
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I = I_update * I
+        I_summand = self.recurrent_nl(
+            (self.xi * self.X)
+            - ((self.alpha * O + self.mu) * U)
+            - ((self.beta * O + self.nu) * P))
+        if not self.gru_gates:
+            # Alternatively, forget gates on the input
+            I = (I_update * I) + ((1 - I_update) * I_summand)
+        else:
+            I = I_summand
+        return I
+
+    def output_integration(self, P, Q, I, O, O_update):
+        """Integration on the output."""
+        if self.multiplicative_excitation:
+            # Multiplicative gating I * (P + Q)
+            # O_summand = self.recurrent_nl(
+            #     self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
+
+            # USE BOTH ADDITIVE AND MULTIPLICATIVE
+            activity = self.gamma * P + self.delta * Q
+            O_additive = self.kappa * (self.zeta * I + activity)
+            O_multiplicative = (1 - self.kappa) * (self.zeta * I * activity)
+            O_summand = self.recurrent_nl(O_additive + O_multiplicative)
         else:
             # Additive gating I + P + Q
             O_summand = self.recurrent_nl(
