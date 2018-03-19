@@ -10,8 +10,8 @@ layer_structure = [
         'layers': ['conv'],
         'names': ['conv1'],
         'stride': [1, 2, 2, 1],
-        'weights': [16],
-        'filter_size': [9],
+        'weights': [8],
+        'filter_size': [5],
         'hardcoded_erfs': {
             'SRF': 5,
             'CRF_excitation': 5,
@@ -66,6 +66,6 @@ output_structure = [
         'flatten_target': ['pre'],
         'layers': ['fc'],
         'weights': [2],
-        'names': ['fc3'],
+        'names': ['fc2'],
     }
 ]

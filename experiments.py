@@ -550,8 +550,14 @@ class experiments():
             'dataset': ['contours_gilbert_256_length_0']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
-        exp['val_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
+        exp['data_augmentations'] = [[
+            'grayscale_slice',
+            'left_right',
+            'up_down']]  # , 'rotate']]
+        exp['val_augmentations'] = [[
+            'grayscale_slice',
+            'left_right',
+            'up_down']]  # , 'rotate']]
         exp['batch_size'] = 8  # Train/val batch size.
         exp['epochs'] = 100
         exp['save_weights'] = True
@@ -559,4 +565,3 @@ class experiments():
         exp['num_validation_evals'] = 10  # 200
         exp['shuffle_val'] = True
         return exp
-
