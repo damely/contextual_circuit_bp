@@ -97,27 +97,7 @@ def evaluation_loop(
         try:
             while not coord.should_stop():
                 start_time = time.time()
-                train_vars = sess.run(train_dict.values())
-                it_train_dict = {k: v for k, v in zip(
-                    train_dict.keys(), train_vars)}
-                duration = time.time() - start_time
-                train_losses[step] = it_train_dict['train_loss']
-                train_accs[step] = it_train_dict['train_accuracy_0']
-                train_images[step] = it_train_dict['train_images']
-                train_labels[step] = it_train_dict['train_labels']
-                train_scores[step] = it_train_dict['train_scores']
-                timesteps[step] = duration
-                if train_aux_check:
-                    # Loop through to find aux scores
-                    it_train_aux = {
-                        itk: itv
-                        for itk, itv in it_train_dict.iteritems()
-                        if 'aux_score' in itk}
-                    train_aux[step] = it_train_aux
-                assert not np.isnan(
-                    it_train_dict['train_loss']
-                    ).any(), 'Model diverged with loss = NaN'
-                if step % config.validation_iters == 0:
+                if 1:  # step % config.validation_iters == 0:
                     it_val_scores, it_val_labels, it_val_aux = [], [], []
                     for num_vals in range(config.num_validation_evals):
                         # Validation accuracy as the average of n batches
@@ -162,10 +142,10 @@ def evaluation_loop(
 
     # Package images into a dictionary
     image_dict = {
-        'train_images': train_images,
+        # 'train_images': train_images,
         'val_images': val_images,
-        'train_scores': train_scores,
-        'train_labels': train_labels,
+        # 'train_scores': train_scores,
+        # 'train_labels': train_labels,
         'val_scores': val_scores,
         'val_labels': val_labels
     }

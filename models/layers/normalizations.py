@@ -5,6 +5,7 @@ from ops.eRF_calculator import eRF_calculator
 from models.layers.normalization_functions import div_norm
 from models.layers.normalization_functions import layer_norm
 from models.layers.normalization_functions import contextual
+from models.layers.normalization_functions import contextual_psych_review
 from models.layers.normalization_functions import contextual_single_ecrf
 from models.layers.normalization_functions import contextual_single_cs
 
@@ -153,6 +154,21 @@ class normalizations(object):
             aux=aux)
         return contextual_layer.build()
 
+    def contextual_single_cs(self, x, layer, eRF, aux):
+        """Contextual model from paper with frozen U & eCRFs."""
+        self.update_params(aux)
+        self.set_RFs(layer=layer, eRF=eRF)
+        contextual_layer = contextual_single_cs.ContextualCircuit(
+            X=x,
+            timesteps=self.timesteps,
+            SRF=self.SRF,
+            SSN=self.SSN,
+            SSF=self.SSF,
+            strides=self.strides,
+            padding=self.padding,
+            aux=aux)
+        return contextual_layer.build()
+
     def contextual_single_ecrf(self, x, layer, eRF, aux):
         """Contextual model from paper with frozen U & eCRFs."""
         self.update_params(aux)
@@ -168,11 +184,11 @@ class normalizations(object):
             aux=aux)
         return contextual_layer.build()
 
-    def contextual_single_cs(self, x, layer, eRF, aux):
-        """Contextual model fully learnable."""
+    def contextual_psych_review(self, x, layer, eRF, aux):
+        """Contextual model from paper with frozen U & eCRFs."""
         self.update_params(aux)
         self.set_RFs(layer=layer, eRF=eRF)
-        contextual_layer = contextual_single_cs.ContextualCircuit(
+        contextual_layer = contextual_psych_review.ContextualCircuit(
             X=x,
             timesteps=self.timesteps,
             SRF=self.SRF,

@@ -5,7 +5,7 @@ from skimage.filters import gabor_kernel
 from skimage.util import pad
 
 
-out_name = 'gabors_for_contours_5.npy'
+out_name = 'gabors_for_contours_11.npy'
 out_path = os.path.join(
     '%smedia' % os.path.sep,
     'data_cifs',
@@ -15,8 +15,8 @@ out_path = os.path.join(
 
 thetas = (np.arange(4.) / 4.) * np.pi
 offsets = [0, 90]
-scales_stds = [[0.6, 2]] # [[0.4, 2]]  # , [0.2, 6]]
-target_h = 5
+scales_stds = [[0.2, 1.5]]  # [[0.2, 1]] [[0.2, 1]] [[0.2, 0.5]]
+target_h = 11  # 7 5
 
 filters = []
 for ss in scales_stds:

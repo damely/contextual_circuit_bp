@@ -426,8 +426,8 @@ class experiments():
         exp = {
             'experiment_name': [model_folder],
             'lr': [3e-4],  # , 1e-4],
-            # 'loss_function': ['cce@cce'],
-            'loss_function': ['cce@zero'],
+            'loss_function': ['cce@cce'],
+            # 'loss_function': ['cce@zero'],
             'optimizer': ['nadam'],
             'model_struct': [
                 # os.path.join(model_folder, 'narrow_gru_nm'),
@@ -456,6 +456,38 @@ class experiments():
                 # 'random_crop',
                 'up_down',
                 'rotate'
+            ]
+        ]
+        exp['pr_curve'] = True
+        exp['save_validation_predictions'] = True
+        return exp
+
+    def crcns_2d_gcampf(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'crcns_2d_gcampf'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [3e-4],
+            'loss_function': ['cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                os.path.join(model_folder, 'narrow_gru'),
+            ],
+            'dataset': ['crcns_2d_gcampf']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['epochs'] = 100
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 629  # 225
+        exp['batch_size'] = 16  # Train/val batch size.
+        exp['save_weights'] = True
+        exp['data_augmentations'] = [
+            [
+                # None
+                'resize_and_crop',
+                'left_right',
+                'up_down',
+                # 'rotate'
             ]
         ]
         exp['pr_curve'] = True
@@ -503,24 +535,24 @@ class experiments():
             'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(
-                    model_folder, 'mu_context'),
+                   model_folder, 'mu_context'),
                 os.path.join(
                     model_folder, 'mu_conv'),
-                os.path.join(
-                    model_folder, 'mu_conv_2'),
-                os.path.join(
-                    model_folder, 'mu_conv_3'),
-                os.path.join(
-                    model_folder, 'mu_conv_2_pool'),
-                os.path.join(
-                    model_folder, 'mu_conv_3_pool'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2_pool'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_256']
+            'dataset': ['contours_gilbert_256_length_0']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
         exp['val_augmentations'] = [['grayscale_slice', 'left_right', 'up_down', 'rotate']]
-        exp['batch_size'] = 20  # Train/val batch size.
+        exp['batch_size'] = 8  # Train/val batch size.
         exp['epochs'] = 100
         exp['save_weights'] = True
         exp['validation_iters'] = 500

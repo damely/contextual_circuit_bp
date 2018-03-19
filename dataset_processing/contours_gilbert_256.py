@@ -9,7 +9,7 @@ from ops import tf_fun
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'contours_gilbert_256'
+        self.name = 'contours_gilbert_256_length_0'
         self.im_extension = '.png'
         self.images_dir = 'images'
         self.label_regex = r'(?<=length)\d+'
@@ -21,7 +21,7 @@ class data_processing(object):
         self.label_size = self.output_size
         self.default_loss_function = 'cce'
         self.score_metric = 'accuracy'
-        self.store_z = True
+        self.store_z = False
         self.normalize_im = True
         self.shuffle = True
         self.input_normalization = 'zscore'
@@ -100,4 +100,3 @@ class data_processing(object):
             cv_labels[k] = it_labels
             prev_cv = cv_split
         return cv_files, cv_labels
-

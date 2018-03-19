@@ -115,7 +115,7 @@ def data_to_tfrecords(
                         label = preprocess_image(label, preprocess, label_size)
                 else:
                     label = it_l
-                    if len(label.shape) > 1:
+                    if isinstance(label, np.ndarray) and len(label.shape) > 1:
                         label = preprocess_image(
                             label, preprocess, label_size)
                 data_dict = {

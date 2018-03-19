@@ -546,6 +546,22 @@ class db(object):
         if self.status_message:
             self.return_status('SELECT')
 
+    def get_summaries(self, experiment_name):
+        """Get experiment performance."""
+        self.cur.execute(
+            """
+            SELECT distinct(summary_dir), model_struct FROM performance AS P
+            LEFT JOIN experiments ON experiments._id = P.experiment_id
+            WHERE experiments.model_struct ~ %(experiment_name)s;
+            """,
+            {
+                'experiment_name': experiment_name
+            }
+        )
+        if self.status_message:
+            self.return_status('SELECT')
+        return self.cur.fetchall()
+
 
 def get_experiment_name():
     """Get names of experiments."""
@@ -556,6 +572,14 @@ def get_experiment_name():
         print 'No remaining experiments to run.'
         sys.exit(1)
     return param_dict['experiment_name']
+
+
+def get_summary_list(experiment_name):
+    """Get list of tensorboard summaries."""
+    config = credentials.postgresql_connection()
+    with db(config) as db_conn:
+        summaries = db_conn.get_summaries(experiment_name)
+    return summaries
 
 
 def get_parameters(experiment_name, log, random=False, evaluation=None):

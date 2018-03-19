@@ -2,21 +2,24 @@
 
 layer_structure = [
     {
-        'layers': ['alexnet_conv'],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
-        'alexnet_layer': 's1',
-        'trainable': False,
-        'init_bias': True,
+        # 'layers': ['alexnet_conv'],
+        # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_11.npy',
+        # 'alexnet_layer': 's1',
+        # 'trainable': True,
+        # 'init_bias': True,
+        'layers': ['conv'],
         'names': ['conv1'],
         'stride': [1, 2, 2, 1],
-        'filter_size': [7],
+        'weights': [16],
+        'filter_size': [9],
         'hardcoded_erfs': {
-            'SRF': 4,
-            'CRF_excitation': 4, 
-            'CRF_inhibition': 4,
-            'SSN': 20,  # [11, 11, 11],
-            'SSF': 20, # [11, 11, 11]  # 30
-            # 'SSN': [8, 8, 8, 3],  # Vanilla VGG-style
+            'SRF': 5,
+            'CRF_excitation': 5,
+            'CRF_inhibition': 5,
+            'SSN': 20,  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 20,  # [5, 5, 5],  # [11, 11, 11]  # 30
+            # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
+            # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
             # 'SSN': [6, 6, 6],  # Atrous VGG-style
             # 'SSF': [6, 6, 6]
@@ -24,13 +27,14 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 3,
-            'xi': True,  # If FF drive is not trainable
-            # 'rectify_weights': True,
-            'pre_batchnorm': False,
+            'timesteps': 5,
+            'xi': False,  # If FF drive is not trainable
+            'rectify_weights': False,
+            'pre_batchnorm': True,
             'post_batchnorm': False,
-            'dense_connections': False,
-            'atrous_convolutions': 0,
+            # 'dense_connections': True,
+            # 'batch_norm': True,
+            'atrous_convolutions': False,
             'association_field': True,
             'multiplicative_excitation': True,
             'gru_gates': False,
@@ -38,12 +42,12 @@ layer_structure = [
             'regularization_targets': {  # Modulate sparsity
                 'q_t': {
                    'regularization_type': 'l1',  # 'orthogonal',
-                   'regularization_strength': 1e-7  # 0.01
+                   'regularization_strength': 1e-7  # 1e-5  # 0.01
                 },
                 'p_t': {
                     'regularization_type': 'l1',  # 'laplace',  # 'orthogonal',
-                    'regularization_strength': 1e-7  # 1.
-                    },
+                    'regularization_strength': 1e-7  # 1e-5  # 1.
+                },
             }
         }
     },

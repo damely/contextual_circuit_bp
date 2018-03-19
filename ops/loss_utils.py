@@ -205,8 +205,9 @@ def frobenius(x):
             tf.reshape(x, x_shape[:2] + [ch_dim]),
             [conv_dim, ch_dim]))
     mean_t = tf.reduce_mean(x, axis=1, keep_dims=True)
-    cov_t = tf.matmul((x - mean_t), tf.transpose(x - mean_t))/(
-        int(x.get_shape()[-1]) - 1)
+    cov_t = tf.matmul(
+        (x - mean_t), tf.transpose(x - mean_t)) / (
+            int(x.get_shape()[-1]) - 1)
     cov2_t = tf.diag(1. / tf.sqrt(tf.diag_part(cov_t)))
     cor = tf.matmul(tf.matmul(cov2_t, cov_t), cov2_t)
     return tf.trace((2 - cor) ** 2)
@@ -243,8 +244,7 @@ def cce(logits, labels, weights=None):
         return tf.reduce_mean(
             tf.nn.sparse_softmax_cross_entropy_with_logits(
                 logits=logits,
-                labels=labels) * weights
-            ), tf.nn.softmax(logits)
+                labels=labels) * weights), tf.nn.softmax(logits)
 
 
 def cce_ns(logits, labels, weights=None):
@@ -264,8 +264,7 @@ def cce_ns(logits, labels, weights=None):
         return tf.reduce_mean(
             tf.nn.softmax_cross_entropy_with_logits(
                 logits=logits,
-                labels=labels) * weights
-            ), tf.nn.softmax(logits)
+                labels=labels) * weights), tf.nn.softmax(logits)
 
 
 def l2(logits, labels, weights):

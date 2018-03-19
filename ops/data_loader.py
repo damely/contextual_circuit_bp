@@ -211,8 +211,8 @@ def image_augmentations(
             image = center_crop(image, model_input_image_size)
             print 'Applying area resize.'
         if 'rotate' in data_augmentations and im_size_check:
-            max_theta = 360.  # 30.
-            angle_rad = max_theta / 180 * math.pi
+            max_theta = 360.
+            angle_rad = (max_theta / 180.) * math.pi
             angles = tf.random_uniform([], -angle_rad, angle_rad)
             transform = tf.contrib.image.angles_to_projective_transforms(
                 angles,
@@ -316,6 +316,8 @@ def image_augmentations(
             label = label / im_shape[0]
         if 'calculate_rate' in data_augmentations:
             label = label / image.get_shape().as_list()[0]
+        if 'threshold' in data_augmentations:
+            image = tf.cast(tf.greater(image, 0), tf.float32)            
     else:
         assert len(image.get_shape()) == 3, '4D not implemented yet.'
         image = tf.image.resize_image_with_crop_or_pad(

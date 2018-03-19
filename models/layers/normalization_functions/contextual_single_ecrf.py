@@ -17,21 +17,21 @@ try:
         data_format = op.get_attr('data_format')
         shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
         dx = nn_ops.conv2d_backprop_input(
-               shape_0,
-               op.inputs[1],
-               grad,
-               strides=strides,
-               padding=padding,
-               use_cudnn_on_gpu=use_cudnn_on_gpu,
-               data_format=data_format)
+           shape_0,
+           op.inputs[1],
+           grad,
+           strides=strides,
+           padding=padding,
+           use_cudnn_on_gpu=use_cudnn_on_gpu,
+           data_format=data_format)
         dw = nn_ops.conv2d_backprop_filter(
-               op.inputs[0],
-               shape_1,
-               grad,
-               strides=strides,
-               padding=padding,
-               use_cudnn_on_gpu=use_cudnn_on_gpu,
-               data_format=data_format)
+           op.inputs[0],
+           shape_1,
+           grad,
+           strides=strides,
+           padding=padding,
+           use_cudnn_on_gpu=use_cudnn_on_gpu,
+           data_format=data_format)
         dw_t = tf.transpose(
             dw,
             (2, 3, 0, 1))
@@ -57,8 +57,7 @@ def auxilliary_variables():
         'dtype': tf.float32,
         'return_weights': True,
         'hidden_init': 'zeros',
-        'tuning_init': 'cov',  # TODO: Initialize tuning as input covariance
-        'association_field': False,
+        'association_field': True,
         'tuning_nl': tf.nn.relu,
         'train': True,
         'dropout': None,
@@ -71,15 +70,16 @@ def auxilliary_variables():
         'gru_gates': False,  # True input reset gate vs. integration gate
         'post_tuning_nl': tf.nn.relu,  # Nonlinearity on crf activity
         'gate_filter': 1,  # Gate kernel size
-        'zeta': True,  # Scale I (excitatory state)
-        'gamma': True,  # Scale P
-        'delta': True,  # Scale Q
+        'zeta': False,  # Scale I (excitatory state)
+        'gamma': False,  # Scale P
+        'delta': False,  # Scale Q
         'xi': False,  # Scale X
+        'batch_norm': False,
         'integration_type': 'alternate',  # Psych review (mely) or alternate
         'dense_connections': False,  # Dense connections on VGG-style convs
         'atrous_convolutions': False,  # Non-zero integer controls rate
-        'multiplicative_excitation': False,  # True,  # Replace additive w/ mult
-        'rectify_weights': True  # +/- rectify weights or activities
+        'multiplicative_excitation': False,
+        'rectify_weights': False  # +/- rectify weights or activities
     }
 
 
@@ -187,22 +187,22 @@ class ContextualCircuit(object):
                 'r': {
                     'weight': 'u_r',
                     'activity': 'U_r'
-                    }
-                },
+                }
+            },
             'P': {
                 'r': {
                     'weight': 'p_r',
                     'activity': 'P_r',
                     'tuning': 'p_t'
-                    }
-                },
+                }
+            },
             'Q': {
                 'r': {
                     'weight': 'q_r',
                     'activity': 'Q_r',
                     'tuning': 'q_t'
-                    }
-                },
+                }
+            },
             'I': {
                 'r': {  # Recurrent state
                     'weight': 'i_r',
@@ -290,8 +290,7 @@ class ContextualCircuit(object):
                 name=self.weight_dict['Q']['r']['weight'],
                 dtype=self.dtype,
                 initializer=q_array.astype(np.float32),
-                trainable=False)
-            )
+                trainable=False))
 
         # untuned suppression: reduction across feature axis
         ####################################################
@@ -306,8 +305,7 @@ class ContextualCircuit(object):
                 name=self.weight_dict['U']['r']['weight'],
                 dtype=self.dtype,
                 initializer=u_array.astype(np.float32),
-                trainable=False)
-            )
+                trainable=False))
 
         # weakly tuned summation: pooling in h, w dimensions
         #############################################
@@ -653,6 +651,13 @@ class ContextualCircuit(object):
                     rectification=tf.minimum)
             else:
                 # Skip connections between surround subfilters
+                if self.batch_norm:
+                    P = batch_norm(P)
+                    P = tf.layers.batch_normalization(
+                        P,
+                        scale=True,
+                        center=True,
+                        training=self.train)
                 if self.dense_connections:
                     previous_P += [P]
                 it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
@@ -726,6 +731,7 @@ class ContextualCircuit(object):
 
     def circuit_output(self, I):
         """Circuit output operates on recurrent input (I)."""
+
         # eCRF Excitation
         if self.association_field:
             # Use a full kernel for + surround.
@@ -783,19 +789,15 @@ class ContextualCircuit(object):
 
     def mely_input_integration(self, P, U, I, O, I_update):
         """Integration on the input."""
-        if self.gru_gates:
-            # GRU_gates applied to I before integration
-            I = I_update * I
         I_summand = self.recurrent_nl(
-            (self.xi * self.X)
-            - ((self.alpha * I + self.mu) * U)
-            - ((self.beta * I + self.nu) * P))
+            (self.xi * self.X) -
+            ((self.alpha * I + self.mu) * U) -
+            ((self.beta * I + self.nu) * P))
         if not self.gru_gates:
             # Alternatively, forget gates on the input
-            I = (I_update * I) + ((1 - I_update) * I_summand)
+            return (I_update * I) + ((1 - I_update) * I_summand)
         else:
-            I = I_summand
-        return I
+            return I_summand
 
     def mely_output_integration(self, P, Q, I, O, O_update):
         """Integration on the output."""
@@ -807,24 +809,19 @@ class ContextualCircuit(object):
             # Additive gating I + P + Q
             O_summand = self.recurrent_nl(
                 self.zeta * I + self.gamma * P + self.delta * Q)
-        O = (O_update * O) + ((1 - O_update) * O_summand)
-        return O
+        return (O_update * O) + ((1 - O_update) * O_summand)
 
     def input_integration(self, P, U, I, O, I_update):
         """Integration on the input."""
-        if self.gru_gates:
-            # GRU_gates applied to I before integration
-            I = I_update * I
         I_summand = self.recurrent_nl(
-            (self.xi * self.X)
-            - ((self.alpha * O + self.mu) * U)
-            - ((self.beta * O + self.nu) * P))
+            (self.xi * self.X) -
+            ((self.alpha * O + self.mu) * U) -
+            ((self.beta * O + self.nu) * P))
         if not self.gru_gates:
             # Alternatively, forget gates on the input
-            I = (I_update * I) + ((1 - I_update) * I_summand)
+            return (I_update * I) + ((1 - I_update) * I_summand)
         else:
-            I = I_summand
-        return I
+            return I_summand
 
     def output_integration(self, P, Q, I, O, O_update):
         """Integration on the output."""
@@ -849,6 +846,10 @@ class ContextualCircuit(object):
         """Contextual circuit body."""
 
         # -- Circuit input receives recurrent output (O)
+
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I *= I_update
         P, U, I_update = self.circuit_input(O)
 
         # Calculate input (-) integration
@@ -925,10 +926,10 @@ class ContextualCircuit(object):
                 self.full,
                 loop_vars=elems,
                 back_prop=True,
-                swap_memory=False)
+                swap_memory=True)
 
             # Prepare output
-            i0, O, I = returned  # i0, O, I
+            i0, O, I = returned
 
         if self.return_weights:
             weights = self.gather_tensors(wak='weight')

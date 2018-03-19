@@ -102,6 +102,7 @@ def main(
         list_experiments=False,
         load_and_evaluate_ckpt=None,
         placeholder_data=None,
+        grad_images=True,
         gpu_device='/gpu:0'):
     """Create a tensorflow worker to run experiments in your DB."""
     if list_experiments:
@@ -161,7 +162,7 @@ def main(
     val_data, val_means_image, val_means_label = get_data_pointers(
         dataset=config.dataset,
         base_dir=config.tf_records,
-        cv=train_key,
+        cv=val_key,
         log=log)
 
     # Initialize output folders
@@ -219,13 +220,19 @@ def main(
                 name='val_labels')
 
             # Apply augmentations
-            train_images, train_labels = data_loader.placeholder_image_augmentations(
+            (
+                train_images,
+                train_labels
+            ) = data_loader.placeholder_image_augmentations(
                 images=original_train_images,
                 model_input_image_size=dataset_module.model_input_image_size,
                 labels=original_train_labels,
                 data_augmentations=config.data_augmentations,
                 batch_size=config.batch_size)
-            val_images, val_labels = data_loader.placeholder_image_augmentations(
+            (
+                val_images,
+                val_labels
+            ) = data_loader.placeholder_image_augmentations(
                 images=original_val_images,
                 model_input_image_size=dataset_module.model_input_image_size,
                 labels=original_val_labels,
@@ -327,6 +334,10 @@ def main(
                 output_structure=output_structure,
                 log=log,
                 tower_name='cnn')
+            if grad_images:
+                oh_dims = int(train_scores.get_shape()[-1])
+                target_scores = tf.one_hot(train_labels, oh_dims) * train_scores
+                train_gradients = tf.gradients(target_scores, train_images)[0]
             log.info('Built training model.')
             log.debug(
                 json.dumps(model_summary, indent=4),
@@ -417,7 +428,8 @@ def main(
             if config.tensorboard_images:
                 if len(train_images.get_shape()) == 4:
                     tf_fun.image_summaries(train_images, tag='Training images')
-                if (np.asarray(train_labels.get_shape().as_list()) > 1).sum() > 2:
+                if (np.asarray(
+                        train_labels.get_shape().as_list()) > 1).sum() > 2:
                     tf_fun.image_summaries(
                         train_labels,
                         tag='Training_targets')
@@ -468,7 +480,12 @@ def main(
                 output_structure=output_structure,
                 log=log,
                 tower_name='cnn')
+            if grad_images:
+                oh_dims = int(val_scores.get_shape()[-1])
+                target_scores = tf.one_hot(val_labels, oh_dims) * val_scores
+                val_gradients = tf.gradients(target_scores, val_images)[0]
             log.info('Built validation model.')
+
 
             # Check the shapes of labels and scores
             if not isinstance(train_scores, list):
@@ -519,7 +536,8 @@ def main(
                     tf_fun.image_summaries(
                         val_images,
                         tag='Validation')
-                if (np.asarray(val_labels.get_shape().as_list()) > 1).sum() > 2:
+                if (np.asarray(
+                        val_labels.get_shape().as_list()) > 1).sum() > 2:
                     tf_fun.image_summaries(
                         val_labels,
                         tag='Validation_targets')
@@ -587,8 +605,7 @@ def main(
         'train_images': train_images,
         'train_labels': train_labels,
         'train_op': train_op,
-        'train_scores': train_scores,
-        'conv': model.conv1 
+        'train_scores': train_scores
     }
     val_dict = {
         'val_loss': val_loss,
@@ -596,6 +613,11 @@ def main(
         'val_labels': val_labels,
         'val_scores': val_scores,
     }
+
+    if grad_images:
+        train_dict['train_gradients'] = train_gradients
+        val_dict['val_gradients'] = val_gradients
+
     if isinstance(train_accuracy, list):
         for tidx, (ta, va) in enumerate(zip(train_accuracy, val_accuracy)):
             train_dict['train_accuracy_%s' % tidx] = ta
@@ -661,7 +683,6 @@ def main(
             exp_params=exp_params)
 
     log.info('Finished training.')
-
     model_name = config.model_struct.replace('/', '_')
     if output_dict is not None:
         py_utils.save_npys(
@@ -686,3 +707,4 @@ if __name__ == '__main__':
     # TODO: Add the ability to specify multiple GPUs for parallelization.
     args = parser.parse_args()
     main(**vars(args))
+

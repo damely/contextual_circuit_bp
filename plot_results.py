@@ -197,7 +197,7 @@ def main(
     ax.xaxis.set_major_locator(MaxNLocator(integer=True))
     ax.set_title('Validation')
     # TODO: Mine the experiment declarations for the appropos metric name.
-    ax.set_ylabel(y_lab)
+    # ax.set_ylabel(y_lab)
     # ax.legend_.remove()
     out_name = os.path.join(
         config.plots,
@@ -220,7 +220,7 @@ def main(
         x='model parameters', y='validation loss', legend=False)
     plt.tight_layout()
     ax.set_title('Max validation value')
-    ax.set_ylabel(y_lab)
+    # ax.set_ylabel(y_lab)
     out_name = os.path.join(
         config.plots,
         '%s_%s_bar%s' % (

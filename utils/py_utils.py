@@ -49,7 +49,10 @@ def save_npys(data, model_name, output_string):
             output_string,
             '%s_%s' % (model_name, k)
             )
-        np.save(output, v)
+        try:
+            np.save(output, v)
+        except:
+            print 'Failed to save %s' % k
 
 
 def check_path(data_pointer, log, msg):
