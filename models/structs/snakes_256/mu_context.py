@@ -11,13 +11,13 @@ layer_structure = [
         'names': ['conv1'],
         'stride': [1, 2, 2, 1],
         'weights': [8],
-        'filter_size': [5],
+        'filter_size': [3],
         'hardcoded_erfs': {
-            'SRF': 5,
-            'CRF_excitation': 5,
-            'CRF_inhibition': 5,
-            'SSN': 20,  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 20,  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 3,
+            'CRF_excitation': 3,
+            'CRF_inhibition': 3,
+            'SSN': 15,  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 15,  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -41,11 +41,11 @@ layer_structure = [
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
                 'q_t': {
-                   'regularization_type': 'l1',  # 'orthogonal',
+                   'regularization_type': 'laplace',  # 'orthogonal',
                    'regularization_strength': 1e-7  # 1e-5  # 0.01
                 },
                 'p_t': {
-                    'regularization_type': 'l1',  # 'laplace',  # 'orthogonal',
+                    'regularization_type': 'laplace',  # 'laplace',  # 'orthogonal',
                     'regularization_strength': 1e-7  # 1e-5  # 1.
                 },
             }

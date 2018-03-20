@@ -37,7 +37,8 @@ class Config:
         # DB
         self.db_ssh_forward = False
         machine_name = os.uname()[1]
-        if len(machine_name) == 12:  # Docker container
+        if len(machine_name) == 12 or machine_name != 'serrep3':
+            # Docker container or master p-node
             self.db_ssh_forward = True
 
         # Create directories if they do not exist

@@ -3,48 +3,6 @@ import numpy as np
 import tensorflow as tf
 from utils import py_utils
 from ops import initialization
-from tensorflow.python.ops import array_ops
-from tensorflow.python.ops import nn_ops
-
-
-try:
-    @tf.RegisterGradient('SymmetricConv')
-    def _Conv2DGrad(op, grad):
-        """Weight sharing for symmetric lateral connections."""
-        strides = op.get_attr('strides')
-        padding = op.get_attr('padding')
-        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
-        data_format = op.get_attr('data_format')
-        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
-        dx = nn_ops.conv2d_backprop_input(
-           shape_0,
-           op.inputs[1],
-           grad,
-           strides=strides,
-           padding=padding,
-           use_cudnn_on_gpu=use_cudnn_on_gpu,
-           data_format=data_format)
-        dw = nn_ops.conv2d_backprop_filter(
-           op.inputs[0],
-           shape_1,
-           grad,
-           strides=strides,
-           padding=padding,
-           use_cudnn_on_gpu=use_cudnn_on_gpu,
-           data_format=data_format)
-        dw_t = tf.transpose(
-            dw,
-            (2, 3, 0, 1))
-        dw_symm_t = (0.5) * (dw_t + tf.transpose(
-            dw_t,
-            (1, 0, 2, 3)))
-        dw_symm = tf.transpose(
-            dw_symm_t,
-            (2, 3, 0, 1))
-        return dx, dw_symm
-except Exception, e:
-    print str(e)
-    print 'Already imported SymmetricConv.'
 
 
 # Dependency for symmetric weight ops is in models/layers/ff.py
@@ -60,6 +18,7 @@ def auxilliary_variables():
         'association_field': True,
         'tuning_nl': tf.nn.relu,
         'train': True,
+        'store_states': True,  # False,
         'dropout': None,
         # 'separable': False,  # Need C++ implementation.
         'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
@@ -483,8 +442,10 @@ class ContextualCircuit(object):
             self.xi = tf.constant(1.)
         if self.multiplicative_excitation:
             self.kappa = tf.get_variable(name='kappa', initializer=w_array)
+            self.omega = tf.get_variable(name='omega', initializer=w_array)
         else:
             self.kappa = tf.constant(1.)
+            self.omega = tf.constant(1.)
 
     def conv_2d_op(
             self,
@@ -833,7 +794,7 @@ class ContextualCircuit(object):
             # USE BOTH ADDITIVE AND MULTIPLICATIVE
             activity = self.gamma * P + self.delta * Q
             O_additive = self.kappa * (self.zeta * I + activity)
-            O_multiplicative = (1 - self.kappa) * (self.zeta * I * activity)
+            O_multiplicative = self.omega * (self.zeta * I * activity)
             O_summand = self.recurrent_nl(O_additive + O_multiplicative)
         else:
             # Additive gating I + P + Q
@@ -875,7 +836,50 @@ class ContextualCircuit(object):
         i0 += 1
         return i0, O, I
 
+    def full_store(self, i0, O, I):
+        """Contextual circuit body."""
+
+        # -- Circuit input receives recurrent output (O)
+        it_O = tf.gather(O, i0)
+        it_I = tf.gather(I, i0)
+
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I *= I_update
+        P, U, I_update = self.circuit_input(it_O)
+
+        # Calculate input (-) integration
+        it_I = self.ii(
+            P=P,
+            U=U,
+            I=it_I,
+            O=it_O,
+            I_update=I_update)
+
+        # -- Circuit output receives recurrent input (I)
+        P, Q, O_update = self.circuit_output(it_I)
+
+        # Calculate output (+) integration
+        it_O = self.oi(
+            P=P,
+            Q=Q,
+            I=it_I,
+            O=it_O,
+            O_update=O_update)
+
+
+        O[i0] = it_O
+        I[i0] = it_I
+
+        # Interate loop
+        i0 += 1
+        return i0, O, I
+
     def condition(self, i0, O, I):
+        """While loop halting condition."""
+        return i0 < self.timesteps
+
+    def condition_store(self, i0, O, I):
         """While loop halting condition."""
         return i0 < self.timesteps
 
@@ -910,12 +914,31 @@ class ContextualCircuit(object):
         else:
             raise RuntimeError
 
-        if reduce_memory:
-            print 'Warning: Using FF version of the model.'
-            for t in range(self.timesteps):
-                i0, O, I = self.full(i0, O, I)
+        if self.store_states:
+            store_shape = I.get_shape().as_list()
+            store_O, store_I = [], []
+            for idx in range(self.timesteps):
+                store_I += [I]
+                store_O += [O]
+            I = store_I
+            O = store_O
+            elems = [
+                i0,
+                O,
+                I
+            ]
+            returned = tf.while_loop(
+                self.condition_store,
+                self.full_store,
+                loop_vars=elems,
+                back_prop=True,
+                swap_memory=True)
+
+            # Prepare output
+            i0, O, I = returned
+            https://www.tensorflow.org/api_docs/python/tf/TensorArray
+            import ipdb;ipdb.set_trace()
         else:
-            # While loop
             elems = [
                 i0,
                 O,
@@ -946,3 +969,4 @@ class ContextualCircuit(object):
             return O, weights, activities
         else:
             return O
+

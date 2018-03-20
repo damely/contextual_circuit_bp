@@ -317,7 +317,7 @@ def image_augmentations(
         if 'calculate_rate' in data_augmentations:
             label = label / image.get_shape().as_list()[0]
         if 'threshold' in data_augmentations:
-            image = tf.cast(tf.greater(image, 0), tf.float32)            
+            image = tf.cast(tf.greater(image, 0), tf.float32)
     else:
         assert len(image.get_shape()) == 3, '4D not implemented yet.'
         image = tf.image.resize_image_with_crop_or_pad(

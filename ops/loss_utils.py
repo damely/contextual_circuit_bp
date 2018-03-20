@@ -191,6 +191,8 @@ def interpret_reg_loss(weight, loss_type):
         return frobenius(weight)
     elif loss_type == 'orthogonal':
         return orthogonal(weight)
+    elif loss_type == 'laplace':
+        return laplace(weight)
     else:
         raise NotImplementedError
 
@@ -211,6 +213,27 @@ def frobenius(x):
     cov2_t = tf.diag(1. / tf.sqrt(tf.diag_part(cov_t)))
     cor = tf.matmul(tf.matmul(cov2_t, cov_t), cov2_t)
     return tf.trace((2 - cor) ** 2)
+
+
+def laplace(x):
+    """Regularize the laplace of the kernel."""
+    kernel = np.asarray([
+        [0.5, 1, 0.5],
+        [1, -6, 1],
+        [0.5, 1, 0.5]
+    ])[:, :, None, None]
+    kernel = np.repeat(
+        kernel,
+        int(x.get_shape()[-1]), axis=-2).astype(np.float32)
+    tf_kernel = tf.get_variable(
+        name='laplace_%s' % x.name.split('/')[-1].split(':')[0],
+        initializer=kernel)
+    reg_activity = tf.nn.conv2d(
+        x,
+        filter=tf_kernel,
+        strides=[1, 1, 1, 1],
+        padding='SAME')
+    return tf.reduce_mean(tf.pow(reg_activity, 2))
 
 
 def orthogonal(x, eps=1e-12):

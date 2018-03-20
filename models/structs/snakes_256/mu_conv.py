@@ -9,7 +9,7 @@ layer_structure = [
         # 'init_bias': True,
         'layers': ['conv'],
         'names': ['conv1'],
-        'filter_size': [5],
+        'filter_size': [3],
         'weights': [8],
         'stride': [1, 2, 2, 1],
         'activation': ['relu'],

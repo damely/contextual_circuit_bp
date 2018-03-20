@@ -15,6 +15,7 @@ from ops import eval_metrics
 from ops import training
 from ops import hp_opt_utils
 from ops import tf_fun
+from ops import gradients
 from tensorboard.plugins.pr_curve import summary as pr_summary
 
 
