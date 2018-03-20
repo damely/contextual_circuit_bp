@@ -18,7 +18,7 @@ def auxilliary_variables():
         'association_field': True,
         'tuning_nl': tf.nn.relu,
         'train': True,
-        'store_states': True,  # False,
+        'store_states': False,
         'dropout': None,
         # 'separable': False,  # Need C++ implementation.
         'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
@@ -613,7 +613,6 @@ class ContextualCircuit(object):
             else:
                 # Skip connections between surround subfilters
                 if self.batch_norm:
-                    P = batch_norm(P)
                     P = tf.layers.batch_normalization(
                         P,
                         scale=True,
@@ -836,50 +835,45 @@ class ContextualCircuit(object):
         i0 += 1
         return i0, O, I
 
-    def full_store(self, i0, O, I):
+    def full_store(self, i0, O, I, store_I, store_O):
         """Contextual circuit body."""
 
         # -- Circuit input receives recurrent output (O)
-        it_O = tf.gather(O, i0)
-        it_I = tf.gather(I, i0)
 
         if self.gru_gates:
             # GRU_gates applied to I before integration
             I *= I_update
-        P, U, I_update = self.circuit_input(it_O)
+        P, U, I_update = self.circuit_input(O)
 
         # Calculate input (-) integration
-        it_I = self.ii(
+        I = self.ii(
             P=P,
             U=U,
-            I=it_I,
-            O=it_O,
+            I=I,
+            O=O,
             I_update=I_update)
 
         # -- Circuit output receives recurrent input (I)
-        P, Q, O_update = self.circuit_output(it_I)
+        P, Q, O_update = self.circuit_output(I)
 
         # Calculate output (+) integration
-        it_O = self.oi(
+        O = self.oi(
             P=P,
             Q=Q,
-            I=it_I,
-            O=it_O,
+            I=I,
+            O=O,
             O_update=O_update)
-
-
-        O[i0] = it_O
-        I[i0] = it_I
-
+        store_I.write(i0, I)
+        store_O.write(i0, O)
         # Interate loop
         i0 += 1
-        return i0, O, I
+        return i0, O, I, store_I, store_O
 
     def condition(self, i0, O, I):
         """While loop halting condition."""
         return i0 < self.timesteps
 
-    def condition_store(self, i0, O, I):
+    def condition_store(self, i0, O, I, store_I, store_O):
         """While loop halting condition."""
         return i0 < self.timesteps
 
@@ -915,17 +909,15 @@ class ContextualCircuit(object):
             raise RuntimeError
 
         if self.store_states:
-            store_shape = I.get_shape().as_list()
-            store_O, store_I = [], []
-            for idx in range(self.timesteps):
-                store_I += [I]
-                store_O += [O]
-            I = store_I
-            O = store_O
+            store_I = tf.TensorArray(tf.float32, size=self.timesteps)
+            store_O = tf.TensorArray(tf.float32, size=self.timesteps)
+
             elems = [
                 i0,
                 O,
-                I
+                I,
+                store_I,
+                store_O
             ]
             returned = tf.while_loop(
                 self.condition_store,
@@ -935,9 +927,10 @@ class ContextualCircuit(object):
                 swap_memory=True)
 
             # Prepare output
-            i0, O, I = returned
-            https://www.tensorflow.org/api_docs/python/tf/TensorArray
             import ipdb;ipdb.set_trace()
+            i0, O, I, store_I, store_O = returned
+            store_I = store_I.stack()
+            store_O = store_O.stack()
         else:
             elems = [
                 i0,
@@ -966,7 +959,12 @@ class ContextualCircuit(object):
             # Attach weights if using association field
             if self.association_field:
                 weights['p_t'] = self.p_r  # Make available for regularization
-            return O, weights, activities
+            if self.store_states:
+                return O, weights, activities, store_I, store_O
+            else:
+                return O, weights, activities
         else:
-            return O
-
+            if self.store_states:
+                return O, store_I, store_O
+            else:
+                return O
