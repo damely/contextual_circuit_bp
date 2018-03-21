@@ -538,16 +538,16 @@ class experiments():
                    model_folder, 'mu_context'),
                 os.path.join(
                     model_folder, 'mu_conv'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_2'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_3'),
+                os.path.join(
+                    model_folder, 'mu_conv_2'),
+                os.path.join(
+                    model_folder, 'mu_conv_3'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_2_pool'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_256_length_0']
+            'dataset': ['contours_gilbert_256_rotations']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
@@ -558,10 +558,11 @@ class experiments():
             'grayscale_slice',
             'left_right',
             'up_down']]  # , 'rotate']]
-        exp['batch_size'] = 8  # Train/val batch size.
-        exp['epochs'] = 100
+        exp['batch_size'] = 16  # Train/val batch size.
+        exp['epochs'] = 20
         exp['save_weights'] = True
         exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 10  # 200
+        exp['num_validation_evals'] = 190  # 200
         exp['shuffle_val'] = True
         return exp
+
