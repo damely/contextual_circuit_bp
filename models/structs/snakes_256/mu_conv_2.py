@@ -2,14 +2,16 @@
 
 layer_structure = [
     {
-        'layers': ['alexnet_conv'],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
-        'alexnet_layer': 's1',
-        'trainable': False,
-        'init_bias': True,
+        # 'layers': ['alexnet_conv'],
+        # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
+        # 'alexnet_layer': 's1',
+        # 'trainable': False,
+        # 'init_bias': True,
+        'layers': ['conv'],
         'names': ['conv1'],
-        'filter_size': [7],
-        'stride': [1, 2, 2, 1],
+        'weights': [8],
+        'filter_size': [5],
+        'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post'],
     },
@@ -21,10 +23,10 @@ layer_structure = [
     # },
     {
         'layers': ['conv'],
-        'weights': [33],
+        'weights': [9],
         'names': ['conv2'],
         'filter_size': [20],
-        'stride': [1, 2, 2, 1],
+        'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post']
     },

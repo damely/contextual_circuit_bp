@@ -2,14 +2,16 @@
 
 layer_structure = [
     {
-        'layers': ['alexnet_conv'],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
-        'alexnet_layer': 's1',
-        'trainable': False,
-        'init_bias': True,
+        # 'layers': ['alexnet_conv'],
+        # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
+        # 'alexnet_layer': 's1',
+        # 'trainable': False,
+        # 'init_bias': True,
+        'layers': ['conv'],
         'names': ['conv1'],
-        'filter_size': [7],
-        'stride': [1, 2, 2, 1],
+        'weights': [8],
+        'filter_size': [5],
+        'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post'],
     },
@@ -21,36 +23,22 @@ layer_structure = [
     # },
     {
         'layers': ['conv'],
-        'weights': [33],
+        'weights': [9],
         'names': ['conv2'],
         'filter_size': [20],
-        'stride': [1, 2, 2, 1],
+        'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post']
     },
     {
         'layers': ['conv'],
-        'weights': [33],
+        'weights': [9],
         'names': ['conv3'],
         'filter_size': [20],
-        'stride': [1, 2, 2, 1],
+        'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post']
-    },
-
-    # {
-    #     'layers': ['pool'],
-    #     'weights': [None],
-    #     'names': ['pool1'],
-    #     'filter_size': [8]
-    # },
-    # {
-    #     'layers': ['global_pool'],
-    #     'weights': [None],
-    #     'names': ['pool2'],
-    #     # 'activation': ['relu'],
-    #     # 'activation_target': ['post']
-    # }
+    }
 ]
 
 output_structure = [
@@ -59,6 +47,6 @@ output_structure = [
         'flatten_target': ['pre'],
         'layers': ['fc'],
         'weights': [2],
-        'names': ['fc3'],
+        'names': ['fc4'],
     }
 ]

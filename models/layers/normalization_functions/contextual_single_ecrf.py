@@ -865,6 +865,7 @@ class ContextualCircuit(object):
             O_update=O_update)
         store_I.write(i0, I)
         store_O.write(i0, O)
+
         # Interate loop
         i0 += 1
         return i0, O, I, store_I, store_O
@@ -911,7 +912,6 @@ class ContextualCircuit(object):
         if self.store_states:
             store_I = tf.TensorArray(tf.float32, size=self.timesteps)
             store_O = tf.TensorArray(tf.float32, size=self.timesteps)
-
             elems = [
                 i0,
                 O,
@@ -927,10 +927,10 @@ class ContextualCircuit(object):
                 swap_memory=True)
 
             # Prepare output
-            import ipdb;ipdb.set_trace()
             i0, O, I, store_I, store_O = returned
-            store_I = store_I.stack()
-            store_O = store_O.stack()
+            store_I = tf.reduce_mean(tf.abs(store_I.stack()), axis=-1)
+            store_O = tf.reduce_mean(tf.abs(store_O.stack()), axis=-1)
+
         else:
             elems = [
                 i0,

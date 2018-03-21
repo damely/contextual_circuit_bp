@@ -63,9 +63,10 @@ labels = np.asarray([int(re.search(label_regex, x).group()) for x in all_ims])
 # num_pos = np.sum(labels == 1)
 # num_neg = np.sum(labels == 0)
 # trimmed_num = np.min([num_pos, num_neg])
-pos_ims = np.where(labels == 1)[0][:per_class]
-neg_ims = np.where(labels == 0)[0][:per_class]
-trimmed_list = np.concatenate((all_ims[pos_ims], all_ims[neg_ims]))
+pos_ims = np.where(labels > 0)[0][:per_class]
+# neg_ims = np.where(labels == 0)[0][:per_class]
+# trimmed_list = np.concatenate((all_ims[pos_ims], all_ims[neg_ims]))
+trimmed_list = all_ims[pos_ims]
 combos = [[x, y] for x in trimmed_list for y in thetas]
-%timeit joblib_loop(combos, order)
+joblib_loop(combos, order)
 # create_rotations(trimmed_list, order, 5)
