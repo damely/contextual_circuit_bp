@@ -537,6 +537,8 @@ class experiments():
                 os.path.join(
                    model_folder, 'mu_context'),
                 os.path.join(
+                   model_folder, 'mu_context_ga'),
+                os.path.join(
                     model_folder, 'mu_conv'),
                 os.path.join(
                     model_folder, 'mu_conv_2'),
