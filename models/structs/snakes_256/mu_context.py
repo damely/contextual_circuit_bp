@@ -8,7 +8,7 @@ layer_structure = [
         'trainable': True,
         'init_bias': True,
         # 'layers': ['conv'],
-        # 'names': ['conv1'],
+        'names': ['conv1'],
         'stride': [1, 1, 1, 1],
         'weights': [8],
         'filter_size': [7],
