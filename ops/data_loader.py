@@ -176,9 +176,9 @@ def image_augmentations(
         if 'center_crop' in data_augmentations and im_size_check:
             image = center_crop(image, model_input_image_size)
             print 'Applying center crop.'
-        if 'grayscale_slice' in data_augmentations and im_size_check:
-            image = tf.expand_dims(image[:, :, 0], axis=-1)
-            print 'Slicing to grayscale.'
+        if 'grayscale' in data_augmentations and im_size_check:
+            image = tf.image.rgb_to_grayscale(image)
+            print 'Converting to grayscale.'
         if 'random_crop_image_label' in data_augmentations and im_size_check:
             assert len(image.get_shape()) == 3, '4D not implemented yet.'
             image, label = crop_image_label(
@@ -484,7 +484,7 @@ def inputs(
         resize_output=None):
     """Read tfrecords and prepare them for queueing."""
     min_after_dequeue = 1000
-    capacity = 1000 * batch_size  # min_after_dequeue + 5 * batch_size
+    capacity = 10000 * batch_size  # min_after_dequeue + 5 * batch_size
     num_threads = 2
 
     # Check if we need timecourses.

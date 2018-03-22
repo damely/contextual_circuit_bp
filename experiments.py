@@ -553,18 +553,17 @@ class experiments():
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
-            'grayscale_slice',
+            'grayscale',
             'left_right',
             'up_down']]  # , 'rotate']]
         exp['val_augmentations'] = [[
-            'grayscale_slice',
+            'grayscale',
             'left_right',
             'up_down']]  # , 'rotate']]
-        exp['batch_size'] = 16  # Train/val batch size.
+        exp['batch_size'] = 8  # Train/val batch size.
         exp['epochs'] = 20
         exp['save_weights'] = True
         exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 190  # 200
+        exp['num_validation_evals'] = 100  # 200
         exp['shuffle_val'] = True
         return exp
-

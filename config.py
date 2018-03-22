@@ -13,7 +13,6 @@ class Config:
         self.tf_records = os.path.join(
             self.project_directory,
             'tf_records')
-        self.tf_records = '/home/drew/Documents/temp_tf'
         self.checkpoints = os.path.join(
             self.project_directory,
             'checkpoints')
