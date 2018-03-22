@@ -124,6 +124,7 @@ class ContextualCircuit(object):
             tf.get_variable(
                 name=self.weight_dict['Q']['r']['weight'],
                 dtype=self.dtype,
+                trainable=False,
                 initializer=initialization.xavier_initializer(
                     shape=self.q_shape,
                     uniform=self.normal_initializer,
@@ -137,6 +138,7 @@ class ContextualCircuit(object):
             tf.get_variable(
                 name=self.weight_dict['U']['r']['weight'],
                 dtype=self.dtype,
+                trainable=False,
                 initializer=initialization.xavier_initializer(
                     shape=self.u_shape,
                     uniform=self.normal_initializer,
@@ -163,6 +165,7 @@ class ContextualCircuit(object):
             tf.get_variable(
                 name=self.weight_dict['P']['r']['weight'],
                 dtype=self.dtype,
+                trainable=False,
                 initializer=initialization.xavier_initializer(
                     shape=self.p_shape,
                     uniform=self.normal_initializer,
@@ -188,24 +191,37 @@ class ContextualCircuit(object):
             tf.get_variable(
                 name=self.weight_dict['T']['r']['weight'],
                 dtype=self.dtype,
+                trainable=False,
                 initializer=initialization.xavier_initializer(
                     shape=self.t_shape,
                     uniform=self.normal_initializer,
                     mask=t_array)))
 
         # Scalar weights
-        self.xi = tf.get_variable(name='xi', initializer=4.5)
-        self.alpha = tf.get_variable(name='alpha', initializer=1.)
-        self.beta = tf.get_variable(name='beta', initializer=3. * 1.5)
-        self.mu = tf.get_variable(name='mu', initializer=1.)
-        self.nu = tf.get_variable(name='nu', initializer=3. * 1.5)
-        self.zeta = tf.get_variable(name='zeta', initializer=0.)
-        self.gamma = tf.get_variable(name='gamma', initializer=1.)
-        self.delta = tf.get_variable(name='delta', initializer=1.)
-        self.eps = tf.get_variable(name='eps', initializer=0.5)
-        self.eta = tf.get_variable(name='eta', initializer=6.0)
-        self.sig = tf.get_variable(name='sig', initializer=0.5)
-        self.tau = tf.get_variable(name='tau', initializer=6.0)
+        self.xi = tf.get_variable(
+            name='xi', trainable=False, initializer=4.5)
+        self.alpha = tf.get_variable(
+            name='alpha', trainable=False, initializer=1.)
+        self.beta = tf.get_variable(
+            name='beta', trainable=False, initializer=3. * 1.5)
+        self.mu = tf.get_variable(
+            name='mu', trainable=False, initializer=1.)
+        self.nu = tf.get_variable(
+            name='nu', trainable=False, initializer=3. * 1.5)
+        self.zeta = tf.get_variable(
+            name='zeta', trainable=False, initializer=0.)
+        self.gamma = tf.get_variable(
+            name='gamma', trainable=False, initializer=1.)
+        self.delta = tf.get_variable(
+            name='delta', trainable=False, initializer=1.)
+        self.eps = tf.get_variable(
+            name='eps', trainable=False, initializer=0.5)
+        self.eta = tf.get_variable(
+            name='eta', trainable=False, initializer=6.0)
+        self.sig = tf.get_variable(
+            name='sig', trainable=False, initializer=0.5)
+        self.tau = tf.get_variable(
+            name='tau', trainable=False, initializer=6.0)
 
     def conv_2d_op(self, data, weight_key, out_key=None):
         """2D convolutions, lesion, return or assign activity as attribute."""
@@ -300,7 +316,7 @@ class ContextualCircuit(object):
                 self[self.model_version],
                 loop_vars=elems,
                 back_prop=True,
-                swap_memory=False)
+                swap_memory=True)
             # Prepare output
             i0, O, I = returned  # i0, O, I
         if self.return_weights:
