@@ -555,6 +555,7 @@ class experiments():
         exp['data_augmentations'] = [[
             'grayscale',
             'left_right',
+            'gaussian_noise',
             'up_down']]  # , 'rotate']]
         exp['val_augmentations'] = [[
             'grayscale',

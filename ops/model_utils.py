@@ -49,7 +49,7 @@ class model_class(object):
             log=None,
             tower_name='cnn'):
         """Main model creation method."""
-        if self.mean is not None:
+        if self.mean is not None and self.input_normalization != 'none':
             if isinstance(self.mean, dict):
                 if self.input_normalization == 'mean':
                     data -= self.mean['mean']

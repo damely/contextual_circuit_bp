@@ -280,6 +280,19 @@ def image_augmentations(
             assert len(image.get_shape()) == 3, '4D not implemented yet.'
             image = tf.image.random_brightness(image, max_delta=63.)
             print 'Applying random brightness.'
+        if 'gaussian_noise' in data_augmentations:
+            im_shape = image.get_shape().as_list()
+            assert len(im_shape) == 3, '4D not implemented yet.'
+            sigma = 255. / 8.
+            mu = 0.
+            image = image + tf.random_normal(
+                im_shape,
+                mean=mu,
+                stddev=sigma)
+            image_min = tf.reduce_min(image)
+            image_max = tf.reduce_max(image)
+            image = (image - image_min) / (image_max - image_min)
+            print 'Applying gaussian noise.'
         if 'calculate_rate_time_crop' in data_augmentations:
             im_shape = image.get_shape().as_list()
             minval = im_shape[0] // 3

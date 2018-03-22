@@ -24,7 +24,7 @@ class data_processing(object):
         self.store_z = False
         self.normalize_im = False
         self.shuffle = True
-        self.input_normalization = 'zscore'
+        self.input_normalization = 'none'
         self.preprocess = ['resize']  # ['resize_nn']
         self.folds = {
             'train': 'train',
