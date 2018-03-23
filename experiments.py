@@ -568,3 +568,50 @@ class experiments():
         exp['num_validation_evals'] = 100  # 200
         exp['shuffle_val'] = True
         return exp
+
+    def snakes_400(self):
+        """Each key in experiment_dict must be manually added to the schema."""
+        model_folder = 'snakes_400'
+        exp = {
+            'experiment_name': [model_folder],
+            'lr': [1e-3],
+            'loss_function': ['cce'],
+            'optimizer': ['nadam'],
+            'model_struct': [
+                os.path.join(
+                   model_folder, 'mu_context'),
+                os.path.join(
+                   model_folder, 'mu_context_atrous'),
+                os.path.join(
+                   model_folder, 'mu_context_l1'),
+                os.path.join(
+                   model_folder, 'mu_context_mult'),
+                # os.path.join(
+                #     model_folder, 'mu_conv'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2_pool'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3_pool'),
+            ],
+            'dataset': ['contours_gilbert_400_rotations']
+        }
+        exp = self.add_globals(exp)  # Add globals to the experiment'
+        exp['data_augmentations'] = [[
+            'grayscale',
+            'left_right',
+            'up_down']]  # , 'rotate']]
+        exp['val_augmentations'] = [[
+            'grayscale',
+            'left_right',
+            'up_down']]  # , 'rotate']]
+        exp['batch_size'] = 16  # Train/val batch size.
+        exp['epochs'] = 20
+        exp['save_weights'] = True
+        exp['validation_iters'] = 500
+        exp['num_validation_evals'] = 100  # 200
+        exp['shuffle_val'] = True
+        return exp
