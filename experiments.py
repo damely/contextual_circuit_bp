@@ -585,7 +585,9 @@ class experiments():
                 os.path.join(
                    model_folder, 'mu_context_l1'),
                 os.path.join(
-                   model_folder, 'mu_context_mult'),
+                   model_folder, 'mu_context_time'),
+                # os.path.join(
+                #    model_folder, 'mu_context_mult'),
                 # os.path.join(
                 #     model_folder, 'mu_conv'),
                 # os.path.join(
@@ -597,7 +599,7 @@ class experiments():
                 # os.path.join(
                 #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_400_rotations']
+            'dataset': ['contours_gilbert_400_contrast']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[

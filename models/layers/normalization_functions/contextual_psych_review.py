@@ -315,7 +315,7 @@ class ContextualCircuit(object):
                 self.condition,
                 self[self.model_version],
                 loop_vars=elems,
-                back_prop=True,
+                back_prop=False,
                 swap_memory=True)
             # Prepare output
             i0, O, I = returned  # i0, O, I

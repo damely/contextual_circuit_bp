@@ -22,7 +22,7 @@ class data_processing(object):
         self.default_loss_function = 'cce'
         self.score_metric = 'accuracy'
         self.store_z = False
-        self.normalize_im = False
+        self.normalize_im = True
         self.shuffle = True
         self.input_normalization = 'none'
         self.preprocess = ['resize']  # ['resize_nn']
