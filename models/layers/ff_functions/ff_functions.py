@@ -322,6 +322,76 @@ def alexnet_conv_layer(
         return self, bias
 
 
+def pretrained_conv_layer(
+        self,
+        bottom,
+        out_channels,
+        name,
+        in_channels=None,
+        filter_size=3,
+        stride=[1, 1, 1, 1],
+        padding='SAME',
+        aux=None):
+    """2D convolutional layer with pretrained weights."""
+    assert aux is not None, 'Pass the location of alexnet weights.'
+    assert 'alexnet_npy' in aux.keys(), 'Pass an alexnet_npy key.'
+    if 'stride' in aux.keys():
+        stride = aux['stride']
+    trainable, init_bias = True, False
+    if 'trainable' in aux.keys():
+        trainable = aux['trainable']
+    if 'init_bias' in aux.keys():
+        init_bias = aux['init_bias']
+    if 'rescale' in aux.keys():
+        rescale = aux['rescale']
+    else:
+        rescale = False
+    weights = np.load(aux['alexnet_npy']).item()
+    key = aux['alexnet_layer']
+    preloaded_filter, preloaded_bias = weights[key]
+    with tf.variable_scope(name):
+        if in_channels is None:
+            in_channels = int(bottom.get_shape()[-1])
+        if out_channels != preloaded_filter.shape[-1]:
+            out_channels = preloaded_filter.shape[-1]
+            print 'Set weights = %s.' % preloaded_filter.shape[-1]
+        if in_channels < preloaded_filter.shape[-2] and in_channels == 1:
+            preloaded_filter = np.mean(preloaded_filter, axis=2, keepdims=True)
+        elif in_channels < preloaded_filter.shape[-2]:
+            raise RuntimeError(
+                'Input features = %s, preloaded features = %s' % (
+                    in_channels, preloaded_filter.shape[-2]))
+        filters = tf.get_variable(
+            name=name + "_filters",
+            initializer=preloaded_filter,
+            trainable=trainable)
+        if rescale:
+            rescaler = tf.get_variable(
+                name=name + "_scale",
+                initializer=tf.truncated_normal([out_channels], .0, .001),
+                trainable=True)
+            filters = filters * rescaler
+        self.var_dict[(name, 0)] = filters
+        if init_bias or len(preloaded_bias) == 0:
+            preloaded_bias = tf.truncated_normal([out_channels], .0, .001)
+        self, biases = get_var(
+            self=self,
+            initial_value=preloaded_bias,
+            name=name,
+            idx=1,
+            var_name=name + "_biases")
+        conv = tf.nn.conv2d(bottom, filters, stride, padding=padding)
+        bias = tf.nn.bias_add(conv, biases)
+        if 'nonlinearity' in aux.keys():
+            if aux['nonlinearity'] == 'square':
+                bias = tf.pow(bias, 2)
+            elif aux['nonlinearity'] == 'relu':
+                bias = tf.nn.relu(bias)
+            else:
+                raise NotImplementedError(aux['nonlinearity'])
+        return self, bias
+
+
 def conv1d_layer(
         self,
         bottom,

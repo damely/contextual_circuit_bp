@@ -397,7 +397,7 @@ def create_lr_schedule(train_batch, num_training):
     batch_denom = num_training * train_batch
     learning_rate_fn = learning_rate_with_decay(
         batch_size=train_batch,
-        batch_denom=batch_denom,  # * 10 # 256,
+        batch_denom=batch_denom * 10,  # * 10 # 256,
         num_images=num_training,
         boundary_epochs=[30, 60, 80, 90],
         decay_rates=[1, 0.1, 0.01, 0.001, 1e-4])

@@ -204,6 +204,26 @@ class ff(object):
             aux=it_dict)
         return context, act
 
+    def pretrained_conv(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Add a 2D convolution layer."""
+        context, act = ff_fun.pretrained_conv_layer(
+            self=context,
+            bottom=act,
+            in_channels=in_channels,
+            out_channels=out_channels,
+            name=name,
+            filter_size=filter_size,
+            aux=it_dict)
+        return context, act
+
     def conv3d(
             self,
             context,

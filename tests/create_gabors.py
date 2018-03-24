@@ -36,7 +36,7 @@ for ss in scales_stds:
             filters += [it_filter]
 # Paste the rectified versions together
 rect_filters = np.asarray(filters)
-rect_filters = np.concatenate((np.minimum(rect_filters, 0), np.maximum(rect_filters, 0)), axis=0)
+# rect_filters = np.concatenate((np.minimum(rect_filters, 0), np.maximum(rect_filters, 0)), axis=0)
 filters = rect_filters
 filters = np.expand_dims(
     np.asarray(filters).transpose(1, 2, 0), axis=-2).astype(np.float32)

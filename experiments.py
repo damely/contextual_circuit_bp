@@ -578,18 +578,20 @@ class experiments():
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
-                os.path.join(
-                   model_folder, 'mu_context'),
-                os.path.join(
-                   model_folder, 'mu_context_atrous'),
-                os.path.join(
-                   model_folder, 'mu_context_l1'),
-                os.path.join(
-                   model_folder, 'mu_context_time'),
+                # os.path.join(
+                #    model_folder, 'mu_context'),
+                # os.path.join(
+                #    model_folder, 'mu_context_gru'),
+                # os.path.join(
+                #    model_folder, 'mu_context_atrous'),
+                # os.path.join(
+                #    model_folder, 'mu_context_l1'),
+                # os.path.join(
+                #    model_folder, 'mu_context_time'),
                 # os.path.join(
                 #    model_folder, 'mu_context_mult'),
-                # os.path.join(
-                #     model_folder, 'mu_conv'),
+                os.path.join(
+                    model_folder, 'mu_conv'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_2'),
                 # os.path.join(
@@ -599,7 +601,7 @@ class experiments():
                 # os.path.join(
                 #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_400_contrast']
+            'dataset': ['contours_gilbert_256_sparse_contrast']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
@@ -610,10 +612,11 @@ class experiments():
             'grayscale',
             'left_right',
             'up_down']]  # , 'rotate']]
-        exp['batch_size'] = 16  # Train/val batch size.
+        exp['batch_size'] = 8  # Train/val batch size.
         exp['epochs'] = 20
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 100  # 200
         exp['shuffle_val'] = True
         return exp
+

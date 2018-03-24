@@ -103,7 +103,7 @@ def main(
         list_experiments=False,
         load_and_evaluate_ckpt=None,
         placeholder_data=None,
-        grad_images=True,
+        grad_images=False,
         gpu_device='/gpu:0'):
     """Create a tensorflow worker to run experiments in your DB."""
     if list_experiments:
@@ -131,6 +131,7 @@ def main(
     condition_label = '%s_%s' % (experiment_name, py_utils.get_dt_stamp())
     experiment_label = '%s' % (experiment_name)
     log = logger.get(os.path.join(config.log_dir, condition_label))
+    assert experiment_name is not None, 'Empty experiment name.'
     experiment_dict = experiments.experiments()[experiment_name]()
     config = add_to_config(d=experiment_dict, config=config)  # Globals
     config.load_and_evaluate_ckpt = load_and_evaluate_ckpt
@@ -393,6 +394,7 @@ def main(
                     regularizations=model.regularizations,
                     loss=train_loss,
                     wd_penalty=config.regularization_strength)
+            assert config.lr is not None, 'No learning rate.'  # TODO: Make a QC function 
             if config.lr > 1:
                 old_lr = config.lr
                 config.lr = loss_utils.create_lr_schedule(
