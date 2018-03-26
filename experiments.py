@@ -604,11 +604,11 @@ class experiments():
             'dataset': ['contours_gilbert_256_tight_noContrast']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [[None]]
+        exp['data_augmentations'] = [['center_crop', 'grayscale']]
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]
-        exp['val_augmentations'] = [[None]]
+        exp['val_augmentations'] = [['center_crop', 'grayscale']]
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]

@@ -3,6 +3,48 @@ import numpy as np
 import tensorflow as tf
 from utils import py_utils
 from ops import initialization
+from tensorflow.python.ops import array_ops
+from tensorflow.python.ops import nn_ops
+
+
+try:
+    @tf.RegisterGradient('SymmetricConv')
+    def _Conv2DGrad(op, grad):
+        """Weight sharing for symmetric lateral connections."""
+        strides = op.get_attr('strides')
+        padding = op.get_attr('padding')
+        use_cudnn_on_gpu = op.get_attr('use_cudnn_on_gpu')
+        data_format = op.get_attr('data_format')
+        shape_0, shape_1 = array_ops.shape_n([op.inputs[0], op.inputs[1]])
+        dx = nn_ops.conv2d_backprop_input(
+               shape_0,
+               op.inputs[1],
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw = nn_ops.conv2d_backprop_filter(
+               op.inputs[0],
+               shape_1,
+               grad,
+               strides=strides,
+               padding=padding,
+               use_cudnn_on_gpu=use_cudnn_on_gpu,
+               data_format=data_format)
+        dw_t = tf.transpose(
+            dw,
+            (2, 3, 0, 1))
+        dw_symm_t = (0.5) * (dw_t + tf.transpose(
+            dw_t,
+            (1, 0, 2, 3)))
+        dw_symm = tf.transpose(
+            dw_symm_t,
+            (2, 3, 0, 1))
+        return dx, dw_symm
+except Exception, e:
+    print str(e)
+    print 'Already imported SymmetricConv.'
 
 
 # Dependency for symmetric weight ops is in models/layers/ff.py
@@ -15,7 +57,8 @@ def auxilliary_variables():
         'dtype': tf.float32,
         'return_weights': True,
         'hidden_init': 'zeros',
-        'association_field': True,
+        'tuning_init': 'cov',  # TODO: Initialize tuning as input covariance
+        'association_field': False,
         'tuning_nl': tf.nn.relu,
         'train': True,
         'dropout': None,
@@ -31,13 +74,12 @@ def auxilliary_variables():
         'zeta': True,  # Scale I (excitatory state)
         'gamma': True,  # Scale P
         'delta': True,  # Scale Q
-        'xi': True,  # Scale X
-        'batch_norm': False,
+        'xi': False,  # Scale X
         'integration_type': 'alternate',  # Psych review (mely) or alternate
         'dense_connections': False,  # Dense connections on VGG-style convs
         'atrous_convolutions': False,  # Non-zero integer controls rate
-        'multiplicative_excitation': False,
-        'rectify_weights': False  # +/- rectify weights or activities
+        'multiplicative_excitation': False,  # True,  # Replace additive w/ mult
+        'rectify_weights': True  # +/- rectify weights or activities
     }
 
 
@@ -145,22 +187,22 @@ class ContextualCircuit(object):
                 'r': {
                     'weight': 'u_r',
                     'activity': 'U_r'
-                }
-            },
+                    }
+                },
             'P': {
                 'r': {
                     'weight': 'p_r',
                     'activity': 'P_r',
                     'tuning': 'p_t'
-                }
-            },
+                    }
+                },
             'Q': {
                 'r': {
                     'weight': 'q_r',
                     'activity': 'Q_r',
                     'tuning': 'q_t'
-                }
-            },
+                    }
+                },
             'I': {
                 'r': {  # Recurrent state
                     'weight': 'i_r',
@@ -248,7 +290,8 @@ class ContextualCircuit(object):
                 name=self.weight_dict['Q']['r']['weight'],
                 dtype=self.dtype,
                 initializer=q_array.astype(np.float32),
-                trainable=False))
+                trainable=False)
+            )
 
         # untuned suppression: reduction across feature axis
         ####################################################
@@ -263,7 +306,8 @@ class ContextualCircuit(object):
                 name=self.weight_dict['U']['r']['weight'],
                 dtype=self.dtype,
                 initializer=u_array.astype(np.float32),
-                trainable=False))
+                trainable=False)
+            )
 
         # weakly tuned summation: pooling in h, w dimensions
         #############################################
@@ -441,10 +485,8 @@ class ContextualCircuit(object):
             self.xi = tf.constant(1.)
         if self.multiplicative_excitation:
             self.kappa = tf.get_variable(name='kappa', initializer=w_array)
-            self.omega = tf.get_variable(name='omega', initializer=w_array)
         else:
             self.kappa = tf.constant(1.)
-            self.omega = tf.constant(1.)
 
     def conv_2d_op(
             self,
@@ -611,13 +653,6 @@ class ContextualCircuit(object):
                     rectification=tf.minimum)
             else:
                 # Skip connections between surround subfilters
-                if self.batch_norm:
-                    P = batch_norm(P)
-                    P = tf.layers.batch_normalization(
-                        P,
-                        scale=True,
-                        center=True,
-                        training=self.train)
                 if self.dense_connections:
                     previous_P += [P]
                 it_key = self.weight_dict['P']['r']['weight_%s' % pidx]
@@ -634,31 +669,6 @@ class ContextualCircuit(object):
 
     def circuit_input(self, O):
         """Circuit input operates on recurrent output (O)."""
-
-        # Input gates
-        I_update_input = self.conv_2d_op(
-            data=self.X,
-            weight_key=self.weight_dict['I']['f']['weight'])
-        I_update_recurrent = self.conv_2d_op(
-            data=O,
-            weight_key=self.weight_dict['I']['r']['weight'])
-
-        # Calculate and apply dropout if requested
-        if self.train and self.dropout is not None:
-            I_update = self.zoneout(self.dropout) * self.gate_nl(
-                I_update_input + I_update_recurrent)
-        elif not self.train and self.dropout is not None:
-            I_update = (1 / self.dropout) * self.gate_nl(
-                I_update_input + I_update_recurrent)
-        else:
-            I_update = self.gate_nl(
-                I_update_input + I_update_recurrent + self[
-                    self.weight_dict['I']['r']['bias']])
-
-        if self.gru_gates:
-            # GRU_gates applied to I before integration
-            O *= I_update
-
         # eCRF Inhibition
         if self.association_field:
             # Use a full kernel for - surround.
@@ -693,31 +703,29 @@ class ContextualCircuit(object):
                 nl=self.post_tuning_nl),
             weight_key=self.weight_dict['U']['r']['weight'])
 
+        # Input gates
+        I_update_input = self.conv_2d_op(
+            data=self.X,
+            weight_key=self.weight_dict['I']['f']['weight'])
+        I_update_recurrent = self.conv_2d_op(
+            data=O,
+            weight_key=self.weight_dict['I']['r']['weight'])
+
+        # Calculate and apply dropout if requested
+        if self.train and self.dropout is not None:
+            I_update = self.zoneout(self.dropout) * self.gate_nl(
+                I_update_input + I_update_recurrent)
+        elif not self.train and self.dropout is not None:
+            I_update = (1 / self.dropout) * self.gate_nl(
+                I_update_input + I_update_recurrent)
+        else:
+            I_update = self.gate_nl(
+                I_update_input + I_update_recurrent + self[
+                    self.weight_dict['I']['r']['bias']])
         return P, U, I_update
 
     def circuit_output(self, I):
         """Circuit output operates on recurrent input (I)."""
-
-        # Output gates
-        O_update_input = self.conv_2d_op(
-            data=self.X,
-            weight_key=self.weight_dict['O']['f']['weight'])
-        O_update_recurrent = self.conv_2d_op(
-            data=I,
-            weight_key=self.weight_dict['O']['r']['weight'])
-
-        # Calculate and apply dropout if requested
-        if self.train and self.dropout is not None:
-            O_update = self.zoneout(self.dropout) * self.gate_nl(
-                O_update_input + O_update_recurrent)
-        elif not self.train and self.dropout is not None:
-            O_update = (1 / self.dropout) * self.gate_nl(
-                O_update_input + O_update_recurrent)
-        else:
-            O_update = self.gate_nl(
-                O_update_input + O_update_recurrent + self[
-                    self.weight_dict['O']['r']['bias']])
-
         # eCRF Excitation
         if self.association_field:
             # Use a full kernel for + surround.
@@ -752,19 +760,42 @@ class ContextualCircuit(object):
                 nl=self.post_tuning_nl),
             weight_key=self.weight_dict['Q']['r']['weight'])
 
+        # Output gates
+        O_update_input = self.conv_2d_op(
+            data=self.X,
+            weight_key=self.weight_dict['O']['f']['weight'])
+        O_update_recurrent = self.conv_2d_op(
+            data=I,
+            weight_key=self.weight_dict['O']['r']['weight'])
+
+        # Calculate and apply dropout if requested
+        if self.train and self.dropout is not None:
+            O_update = self.zoneout(self.dropout) * self.gate_nl(
+                O_update_input + O_update_recurrent)
+        elif not self.train and self.dropout is not None:
+            O_update = (1 / self.dropout) * self.gate_nl(
+                O_update_input + O_update_recurrent)
+        else:
+            O_update = self.gate_nl(
+                O_update_input + O_update_recurrent + self[
+                    self.weight_dict['O']['r']['bias']])
         return P, Q, O_update
 
     def mely_input_integration(self, P, U, I, O, I_update):
         """Integration on the input."""
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I = I_update * I
         I_summand = self.recurrent_nl(
-            (self.xi * self.X) -
-            ((self.alpha * I + self.mu) * U) -
-            ((self.beta * I + self.nu) * P))
+            (self.xi * self.X)
+            - ((self.alpha * I + self.mu) * U)
+            - ((self.beta * I + self.nu) * P))
         if not self.gru_gates:
             # Alternatively, forget gates on the input
-            return (I_update * I) + ((1 - I_update) * I_summand)
+            I = (I_update * I) + ((1 - I_update) * I_summand)
         else:
-            return I_summand
+            I = I_summand
+        return I
 
     def mely_output_integration(self, P, Q, I, O, O_update):
         """Integration on the output."""
@@ -776,19 +807,24 @@ class ContextualCircuit(object):
             # Additive gating I + P + Q
             O_summand = self.recurrent_nl(
                 self.zeta * I + self.gamma * P + self.delta * Q)
-        return (O_update * O) + ((1 - O_update) * O_summand)
+        O = (O_update * O) + ((1 - O_update) * O_summand)
+        return O
 
     def input_integration(self, P, U, I, O, I_update):
         """Integration on the input."""
+        if self.gru_gates:
+            # GRU_gates applied to I before integration
+            I = I_update * I
         I_summand = self.recurrent_nl(
-            (self.xi * self.X) -
-            ((self.alpha * O + self.mu) * U) -
-            ((self.beta * O + self.nu) * P))
+            (self.xi * self.X)
+            - ((self.alpha * O + self.mu) * U)
+            - ((self.beta * O + self.nu) * P))
         if not self.gru_gates:
             # Alternatively, forget gates on the input
-            return (I_update * I) + ((1 - I_update) * I_summand)
+            I = (I_update * I) + ((1 - I_update) * I_summand)
         else:
-            return I_summand
+            I = I_summand
+        return I
 
     def output_integration(self, P, Q, I, O, O_update):
         """Integration on the output."""
@@ -796,16 +832,12 @@ class ContextualCircuit(object):
             # Multiplicative gating I * (P + Q)
             # O_summand = self.recurrent_nl(
             #     self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
+
             # USE BOTH ADDITIVE AND MULTIPLICATIVE
             activity = self.gamma * P + self.delta * Q
             O_additive = self.kappa * (self.zeta * I + activity)
-            O_multiplicative = self.omega * (self.zeta * I * activity)
+            O_multiplicative = (1 - self.kappa) * (self.zeta * I * activity)
             O_summand = self.recurrent_nl(O_additive + O_multiplicative)
-            # USE BOTH ADDITIVE AND MULTIPLICATIVE
-            # activity = self.gamma * P + self.delta * Q
-            # O_additive = self.kappa * (self.zeta * I + activity)
-            # O_multiplicative = (1 - self.kappa) * (self.zeta * I * activity)
-            # O_summand = self.recurrent_nl(O_additive + O_multiplicative)
         else:
             # Additive gating I + P + Q
             O_summand = self.recurrent_nl(
@@ -893,10 +925,10 @@ class ContextualCircuit(object):
                 self.full,
                 loop_vars=elems,
                 back_prop=True,
-                swap_memory=True)
+                swap_memory=False)
 
             # Prepare output
-            i0, O, I = returned
+            i0, O, I = returned  # i0, O, I
 
         if self.return_weights:
             weights = self.gather_tensors(wak='weight')
@@ -913,3 +945,4 @@ class ContextualCircuit(object):
             return O, weights, activities
         else:
             return O
+

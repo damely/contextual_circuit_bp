@@ -4,7 +4,7 @@ layer_structure = [
     {
         'layers': ['alexnet_conv'],
         'weights': [32],
-        'alexnet_npy': '/media/data_cifs/vveeraba/contextual_circuit_bp/alexnet_cc.npy',
+        'alexnet_npy': '/media/data_cifs/vveeraba/misc/contextual_circuit_bp/alexnet_cc.npy',
         'alexnet_layer': 'conv1_gabors',
         # 'weights': [96],
         # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',
@@ -17,10 +17,10 @@ layer_structure = [
             'SRF': 6,
             'CRF_excitation': 6, 
             'CRF_inhibition': 6,
-            # 'SSN': 24,
-            # 'SSF': 24
-            'SSN': [8, 8, 8, 3],  # Vanilla VGG-style
-            'SSF': [8, 8, 8, 3]
+            'SSN': 24,
+            'SSF': 24
+            # 'SSN': [8, 8, 8, 3],  # Vanilla VGG-style
+            # 'SSF': [8, 8, 8, 3]
             # 'SSN': [6, 6, 6],  # Atrous VGG-style
             # 'SSF': [6, 6, 6]
         },
@@ -31,7 +31,7 @@ layer_structure = [
         #     'SSN': 30,
         #     'SSF': 30
         # },
-        'normalization': ['contextual_single_ecrf'],
+        'normalization': ['old_cc'],  # ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
             'timesteps': 7,

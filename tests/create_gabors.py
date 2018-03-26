@@ -13,7 +13,7 @@ out_path = os.path.join(
     'pretrained_weights',
     out_name)
 
-thetas = (np.arange(4.) / 4.) * np.pi
+thetas = (np.arange(0, 4., 0.5) / 4.) * np.pi
 offsets = [0, 90]
 scales_stds = [[0.2, 1.5]]  # [[0.2, 1]] [[0.2, 1]] [[0.2, 0.5]]
 target_h = 11  # 7 5

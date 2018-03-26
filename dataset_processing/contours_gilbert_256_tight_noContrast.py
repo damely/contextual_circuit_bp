@@ -15,7 +15,7 @@ class data_processing(object):
         self.label_regex = r'(?<=length)\d+'
         self.config = Config()
         self.im_size = [256, 256, 3]  # 600, 600
-        self.model_input_image_size = [256, 256, 3]  # [107, 160, 3]
+        self.model_input_image_size = [224, 224, 1]  # [107, 160, 3]
         self.max_ims = 0
         self.output_size = [1]
         self.label_size = self.output_size

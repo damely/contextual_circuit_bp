@@ -11,20 +11,20 @@ layer_structure = [
         # 'layers': ['conv'],
         'names': ['conv1'],
         'stride': [1, 1, 1, 1],
-        'weights': [8],
+        'weights': [32],
         'filter_size': [11],
         'normalization': ['batch'],
         'normalization_target': ['post'],
     },
     {
-        'layers': ['_pass'],
+        'layers': ['pool'],
         'names': ['context1'],
         'hardcoded_erfs': {
-            'SRF': 10,
-            'CRF_excitation': 10,
-            'CRF_inhibition': 10,
-            'SSN': 20,  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 20,  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 6,
+            'CRF_excitation': 6,
+            'CRF_inhibition': 6,
+            'SSN': 30,  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 30,  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -35,7 +35,7 @@ layer_structure = [
 	'normalization_target': ['post'],
 	'normalization_aux': {
             'timesteps': 10,
-            'rectify_weights': False,  # False,
+            'rectify_weights': True,  # False,
             'pre_batchnorm': False,
             'post_batchnorm': False,
             # 'dense_connections': True,
@@ -43,7 +43,7 @@ layer_structure = [
             'atrous_convolutions': False,
             'association_field': True,
             'multiplicative_excitation': False,
-            'gru_gates': False,
+            'gru_gates': True,
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
                 'q_t': {
@@ -57,15 +57,15 @@ layer_structure = [
             }
         }
     },
-    {
-        'layers': ['global_max_pool'],
-        'weights': [None],
-        'names': ['pool2'],
-        'normalization': ['batch'],
-        'normalization_target': ['post'],
+    # {
+    #     'layers': ['global_max_pool'],
+    #    'weights': [None],
+    #      'names': ['pool2'],
+    #     'normalization': ['batch'],
+    #     'normalization_target': ['post'],
     #     # 'activation': ['relu'],
     #     # 'activation_target': ['post']
-    }
+    # }
 ]
 
 output_structure = [
