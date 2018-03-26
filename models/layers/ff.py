@@ -640,6 +640,22 @@ class ff(object):
         gap = tf.squeeze(gap)
         return context, gap
 
+    def global_max_pool(
+            self,
+            context,
+            act,
+            in_channels,
+            out_channels,
+            filter_size,
+            name,
+            it_dict):
+        """Global max pool. TODO: move to pool class."""
+        if 'aux' in it_dict and 'abs' in it_dict['aux']:
+            act = tf.abs(act)
+        gap = tf.reduce_max(act, reduction_indices=[1, 2], keep_dims=True)
+        gap = tf.squeeze(gap)
+        return context, gap
+
     def pool(
             self,
             context,

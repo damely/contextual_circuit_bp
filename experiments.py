@@ -534,28 +534,28 @@ class experiments():
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
-                os.path.join(
-                   model_folder, 'mu_context'),
-                os.path.join(
-                   model_folder, 'mu_context_ga'),
+                # os.path.join(
+                #   model_folder, 'mu_context'),
+                # os.path.join(
+                #    model_folder, 'mu_context_ga'),
                 os.path.join(
                     model_folder, 'mu_conv'),
-                os.path.join(
-                    model_folder, 'mu_conv_2'),
-                os.path.join(
-                    model_folder, 'mu_conv_3'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_2_pool'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_256_rotations']
+            'dataset': ['contours_gilbert_256_length_0']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
             'grayscale',
             'left_right',
-            'gaussian_noise',
+            # 'gaussian_noise',
             'up_down']]  # , 'rotate']]
         exp['val_augmentations'] = [[
             'grayscale',
@@ -578,8 +578,8 @@ class experiments():
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
-                # os.path.join(
-                #    model_folder, 'mu_context'),
+                os.path.join(
+                   model_folder, 'mu_context'),
                 # os.path.join(
                 #    model_folder, 'mu_context_gru'),
                 # os.path.join(
@@ -590,8 +590,8 @@ class experiments():
                 #    model_folder, 'mu_context_time'),
                 # os.path.join(
                 #    model_folder, 'mu_context_mult'),
-                os.path.join(
-                    model_folder, 'mu_conv'),
+                # os.path.join(
+                #     model_folder, 'mu_conv'),
                 # os.path.join(
                 #     model_folder, 'mu_conv_2'),
                 # os.path.join(
@@ -601,17 +601,17 @@ class experiments():
                 # os.path.join(
                 #     model_folder, 'mu_conv_3_pool'),
             ],
-            'dataset': ['contours_gilbert_256_sparse_contrast']
+            'dataset': ['contours_gilbert_256_tight_noContrast']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [[
-            'grayscale',
-            'left_right',
-            'up_down']]  # , 'rotate']]
-        exp['val_augmentations'] = [[
-            'grayscale',
-            'left_right',
-            'up_down']]  # , 'rotate']]
+        exp['data_augmentations'] = [[None]]
+            # 'grayscale',
+            # 'left_right',
+            # 'up_down']]  # , 'rotate']]
+        exp['val_augmentations'] = [[None]]
+            # 'grayscale',
+            # 'left_right',
+            # 'up_down']]  # , 'rotate']]
         exp['batch_size'] = 8  # Train/val batch size.
         exp['epochs'] = 20
         exp['save_weights'] = True

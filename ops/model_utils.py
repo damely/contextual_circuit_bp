@@ -89,7 +89,7 @@ class model_class(object):
         else:
             log.debug('Empty mean tensor. No mean adjustment.')
             # log.debug('Failed to mean-center data.')
-        input_data = tf.identity(data, name='lrp_input')
+        input_data = tf.identity(data, name='visualization_input')
         assert log is not None, 'You must pass a logger.'
 
         # Calculate eRF info for main tower

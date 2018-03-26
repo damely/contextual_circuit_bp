@@ -32,7 +32,7 @@ def auxilliary_variables():
         'zeta': True,  # Scale I (excitatory state)
         'gamma': True,  # Scale P
         'delta': True,  # Scale Q
-        'xi': False,  # Scale X
+        'xi': True,  # Scale X
         'batch_norm': False,
         'integration_type': 'alternate',  # Psych review (mely) or alternate
         'dense_connections': False,  # Dense connections on VGG-style convs
@@ -681,7 +681,7 @@ class ContextualCircuit(object):
                 weight_key=self.weight_dict['P']['r']['weight'])
 
         # Rectify surround activities instead of weights
-        if not self.rectify_weights:
+        if self.rectify_weights == False:
             P = tf.minimum(P, 0)
 
         # CRF inhibitiion
@@ -740,7 +740,7 @@ class ContextualCircuit(object):
                 weight_key=self.weight_dict['P']['r']['weight'])
 
         # Rectify surround activities instead of weights
-        if not self.rectify_weights:
+        if self.rectify_weights == False:
             P = tf.maximum(P, 0)
 
         # CRF excitation
@@ -966,3 +966,4 @@ class ContextualCircuit(object):
                 return O, store_I, store_O
             else:
                 return O
+

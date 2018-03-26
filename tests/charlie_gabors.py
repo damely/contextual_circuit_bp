@@ -5,7 +5,7 @@ from tqdm import tqdm
 
 
 rot = np.array([90,-67.5,-45,-22.5,0,22.5,45,67.5])
-RF_siz = [11]
+RF_siz = [15]
 Div = sp.arange(4,3.15,-.05)
 
 
@@ -93,7 +93,7 @@ f,x = gabor_dictionary['s1']
 # plt.show()
 
 ## Save Dictionary ----------------------
-out_name = 'gabors_for_contours_11.npy'
+out_name = 'gabors_for_contours_15.npy'
 out_path = os.path.join(
     '%smedia' % os.path.sep,
     'data_cifs',

@@ -9,7 +9,7 @@ layer_structure = [
         'init_bias': True,
         # 'layers': ['conv'],
         'names': ['conv1'],
-        'stride': [1, 1, 1, 1],
+        'stride': [1, 2, 2, 1],
         'weights': [8],
         'filter_size': [7],
         'hardcoded_erfs': {
@@ -24,7 +24,7 @@ layer_structure = [
             # 'SSN': [6, 6, 6],  # Atrous VGG-style
             # 'SSF': [6, 6, 6]
         },
-        'normalization': ['contextual_single_ecrf'],
+        'normalization': ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
             'timesteps': 5,

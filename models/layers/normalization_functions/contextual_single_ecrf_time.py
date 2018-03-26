@@ -20,7 +20,7 @@ def auxilliary_variables():
         'train': True,
         'dropout': None,
         # 'separable': False,  # Need C++ implementation.
-        'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
+        'recurrent_nl': tf.nn.selu,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
         'gate_nl': tf.nn.sigmoid,
         'ecrf_nl': tf.nn.relu,
         'normal_initializer': False,
@@ -440,19 +440,11 @@ class ContextualCircuit(object):
         else:
             self.xi = tf.constant(1.)
         if self.multiplicative_excitation:
-            setattr(
-                self,
-                'kappa',
-                tf.get_variable(
-                    name='kappa',
-                    dtype=self.dtype,
-                    trainable=True,
-                    initializer=initialization.xavier_initializer(
-                        shape=self.o_shape,
-                        uniform=self.normal_initializer,
-                        mask=None)))
+            self.kappa = tf.get_variable(name='kappa', initializer=w_array)
+            self.omega = tf.get_variable(name='omega', initializer=w_array)
         else:
             self.kappa = tf.constant(1.)
+            self.omega = tf.constant(1.)
 
     def conv_2d_op(
             self,
@@ -804,14 +796,10 @@ class ContextualCircuit(object):
             # Multiplicative gating I * (P + Q)
             # O_summand = self.recurrent_nl(
             #     self.zeta * I * ((self.gamma * P) + (self.delta * Q)))
-            omega = self.recurrent_nl(
-                self.conv_2d_op(
-                    data=O,
-                    weight_key=None,
-                    weights=self.kappa))
+            # USE BOTH ADDITIVE AND MULTIPLICATIVE
             activity = self.gamma * P + self.delta * Q
-            O_multiplicative = (1 - omega) * (self.zeta * I * activity)
-            O_additive = omega * (self.zeta * I + activity)
+            O_additive = self.kappa * (self.zeta * I + activity)
+            O_multiplicative = self.omega * (self.zeta * I * activity)
             O_summand = self.recurrent_nl(O_additive + O_multiplicative)
             # USE BOTH ADDITIVE AND MULTIPLICATIVE
             # activity = self.gamma * P + self.delta * Q

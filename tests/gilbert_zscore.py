@@ -3,19 +3,43 @@ import numpy as np
 from glob import glob
 from tqdm import tqdm
 from imageio import imread
+from skimage import color
+from multiprocessing import Pool
 
 
+class Processor:
+    def __init__(self):
+        pass
+
+    def __call__(self,filename):
+        return color.rgb2gray(imread(filename))
+
+
+max_ims = 100000
+processes = 8
 image_path = os.path.join(
     '%smedia' % os.path.sep,
     'data_cifs',
     'image_datasets',
-    'contours_gilbert_256_sparse_contrast')
+    'contours_gilbert_256_sparse_nonRandomShear')
 images = glob(os.path.join(image_path, '*.png'))
-ims = []
-for im in tqdm(images, total=len(images)):
-    ims += [imread(im)]
+if max_ims:
+    images = images[:max_ims]
+# ims = []
+# for im in tqdm(images, total=len(images)):
+#     ims += [color.rgb2gray(imread(im))]
+
+proc = Processor()
+p = Pool(processes=processes)
+ims = p.map(proc, images)
+# ims = np.empty([max_ims, 256, 256])
+# for idx, im in pool.imap(imloader, images):
+#     ims[idx, :, :] = im
+
 ims = np.asarray(ims)
-ims = ims.reshape([len(images), -1])
-mu = ims.mean(0)
-sd = std(0)
+res_ims = ims.reshape(-1)
+mu = res_ims.mean()
+sd = res_ims.std()
+
+# zims = (ims - mu) / (sd + 1e-12)
 

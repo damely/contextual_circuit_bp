@@ -357,6 +357,9 @@ def pretrained_conv_layer(
             print 'Set weights = %s.' % preloaded_filter.shape[-1]
         if in_channels < preloaded_filter.shape[-2] and in_channels == 1:
             preloaded_filter = np.mean(preloaded_filter, axis=2, keepdims=True)
+        elif in_channels > preloaded_filter.shape[-2] and preloaded_filter.shape[-2] == 1:
+            # Expand the filter to in_channels.shape
+            preloaded_filter = np.repeat(preloaded_filter, in_channels, axis=-2)
         elif in_channels < preloaded_filter.shape[-2]:
             raise RuntimeError(
                 'Input features = %s, preloaded features = %s' % (
