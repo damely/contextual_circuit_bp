@@ -579,9 +579,9 @@ class experiments():
             'optimizer': ['adam'],
             'model_struct': [
                 os.path.join(
-                   model_folder, 'mu_context'),
+                    model_folder, 'mu_context'),
                 os.path.join(
-                   model_folder, 'mu_context_ss'),
+                    model_folder, 'mu_context_hierarchy'),
                 # os.path.join(
                 #    model_folder, 'mu_context_gru'),
                 # os.path.join(
