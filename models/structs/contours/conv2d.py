@@ -4,7 +4,7 @@ layer_structure = [
     {
         'layers': ['alexnet_conv'],
         'weights': [32],
-        'alexnet_npy': '/media/data_cifs/vveeraba/contextual_circuit_bp/alexnet_cc.npy',
+        'alexnet_npy': '/media/data_cifs/vveeraba/misc/contextual_circuit_bp/alexnet_cc.npy',
         'alexnet_layer': 'conv1_gabors',
         # 'weights': [96],
         # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/alexnet.npy',

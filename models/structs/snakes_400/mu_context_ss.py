@@ -39,10 +39,10 @@ layer_structure = [
             # 'SSN': [6, 6, 6],  # Atrous VGG-style
             # 'SSF': [6, 6, 6]
         },
-        'normalization': ['contextual_single_ecrf_time'],
+        'normalization': ['contextual_single_ecrf_ss'],
 	'normalization_target': ['post'],
 	'normalization_aux': {
-            'timesteps': 25,
+            'timesteps': 8,
             'rectify_weights': False,  # False,
             'pre_batchnorm': False,
             'post_batchnorm': False,

@@ -576,10 +576,12 @@ class experiments():
             'experiment_name': [model_folder],
             'lr': [1e-3],
             'loss_function': ['cce'],
-            'optimizer': ['nadam'],
+            'optimizer': ['adam'],
             'model_struct': [
                 os.path.join(
                    model_folder, 'mu_context'),
+                os.path.join(
+                   model_folder, 'mu_context_ss'),
                 # os.path.join(
                 #    model_folder, 'mu_context_gru'),
                 # os.path.join(
@@ -604,11 +606,11 @@ class experiments():
             'dataset': ['contours_gilbert_256_tight_noContrast']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['center_crop', 'grayscale']]
+        exp['data_augmentations'] = [['grayscale']]
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]
-        exp['val_augmentations'] = [['center_crop', 'grayscale']]
+        exp['val_augmentations'] = [['grayscale']]
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]

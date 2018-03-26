@@ -40,6 +40,7 @@ ims = np.asarray(ims)
 res_ims = ims.reshape(-1)
 mu = res_ims.mean()
 sd = res_ims.std()
+np.savez('mu_sd', images={'mean': mu, 'std': sd})
 
 # zims = (ims - mu) / (sd + 1e-12)
 

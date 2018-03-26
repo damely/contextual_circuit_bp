@@ -85,8 +85,12 @@ def get_data_pointers(dataset, base_dir, cv, log):
             data_means = np.load(alt_data_pointer)
             if 'image' in data_means.keys():
                 data_means_image = data_means['image']
+            if 'images' in data_means.keys():
+                 data_means_image = data_means['images']
             if 'label' in data_means.keys():
                 data_means_label = data_means['label']
+            if 'labels' in data_means.keys():
+                data_means_label = data_means['labels']
             if data_means_image is not None and isinstance(
                     data_means_image, np.object):
                 data_means_image = data_means_image.item()
