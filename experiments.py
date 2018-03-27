@@ -576,7 +576,7 @@ class experiments():
             'experiment_name': [model_folder],
             'lr': [1e-3],
             'loss_function': ['cce'],
-            'optimizer': ['adam'],
+            'optimizer': ['nadam'],
             'model_struct': [
                 os.path.join(
                     model_folder, 'mu_context'),
