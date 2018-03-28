@@ -95,4 +95,3 @@ output_structure = [
         'names': ['fc2'],
     }
 ]
-
