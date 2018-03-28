@@ -329,8 +329,13 @@ def image_augmentations(
             label = label / im_shape[0]
         if 'calculate_rate' in data_augmentations:
             label = label / image.get_shape().as_list()[0]
+            print 'Applying rate transformation.'
         if 'threshold' in data_augmentations:
             image = tf.cast(tf.greater(image, 0), tf.float32)
+            print 'Applying threshold.'
+        if 'uint8_rescale' in data_augmentations:
+            image = tf.cast(image, tf.float32) / 255.
+            print 'Applying uint8 rescale.'
     else:
         assert len(image.get_shape()) == 3, '4D not implemented yet.'
         image = tf.image.resize_image_with_crop_or_pad(
@@ -499,7 +504,7 @@ def inputs(
     min_after_dequeue = 1000
     capacity = 10000 * batch_size  # min_after_dequeue + 5 * batch_size
     num_threads = 2
-
+ 
     # Check if we need timecourses.
     if len(model_input_image_size) == 4:
         number_of_files = model_input_image_size[0]
@@ -508,7 +513,6 @@ def inputs(
     with tf.name_scope('input'):
         filename_queue = tf.train.string_input_producer(
             [dataset], num_epochs=num_epochs)
-
         # Even when reading in multiple threads, share the filename
         # queue.
         image_data, label_data = [], []
@@ -523,7 +527,7 @@ def inputs(
                 resize_output=resize_output)
             image_data += [tf.expand_dims(images, axis=0)]
             label_data += [tf.expand_dims(labels, axis=0)]
-
+ 
         # Shuffle the examples and collect them into batch_size batches.
         # (Internally uses a RandomShuffleQueue.)
         # We run this in two threads to avoid being a bottleneck.
@@ -566,17 +570,15 @@ def inputs(
 #     capacity = 100 * batch_size  # min_after_dequeue + 5 * batch_size
 #     num_threads = 2
 
-#     # Check if we need timecourses.
+    # Check if we need timecourses.
 #     if len(model_input_image_size) == 4:
 #         number_of_files = model_input_image_size[0]
-
-#     # Start data loader loop
+    # Start data loader loop
 #     with tf.name_scope('input'):
 #         filename_queue = tf.train.string_input_producer(
 #             [dataset], num_epochs=num_epochs)
-
-#         # Even when reading in multiple threads, share the filename
-#         # queue.
+         # Even when reading in multiple threads, share the filename
+         # queue.
 #         batch_data = read_and_decode(
 #             filename_queue=filename_queue,
 #             model_input_image_size=model_input_image_size,
@@ -586,16 +588,16 @@ def inputs(
 #             number_of_files=number_of_files,
 #             resize_output=resize_output)
 
-#         # Shuffle the examples and collect them into batch_size batches.
-#         # (Internally uses a RandomShuffleQueue.)
-#         # We run this in two threads to avoid being a bottleneck.
-#         if shuffle:
+        # Shuffle the examples and collect them into batch_size batches.
+        # (Internally uses a RandomShuffleQueue.)
+        # We run this in two threads to avoid being a bottleneck.
+#        if shuffle:
 #             images, labels = tf.train.shuffle_batch(
 #                 batch_data,
 #                 batch_size=batch_size,
-#                 # num_threads=num_threads,
+                # num_threads=num_threads,
 #                 capacity=capacity,
-#                 # Ensures a minimum amount of shuffling of examples.
+                # Ensures a minimum amount of shuffling of examples.
 #                 min_after_dequeue=min_after_dequeue)
 #         else:
 #             images, labels = tf.train.batch(
@@ -604,3 +606,4 @@ def inputs(
 #                 num_threads=num_threads,
 #                 capacity=capacity)
 #         return images, labels
+

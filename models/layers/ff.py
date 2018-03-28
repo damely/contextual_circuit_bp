@@ -673,8 +673,8 @@ class ff(object):
             filter_size = [1, filter_size, filter_size, 1]
         if not isinstance(stride_size, list):
             filter_size = [1, stride_size, stride_size, 1]
-        if 'aux' in it_dict and 'pool_type' in it_dict['aux']:
-            pool_type = it_dict['aux']['pool_type']
+        if 'pool_type' in it_dict:
+            pool_type = it_dict['pool_type']
         else:
             pool_type = 'max'
 
@@ -705,8 +705,8 @@ class ff(object):
             filter_size = [filter_size]
         if not isinstance(stride_size, list):
             filter_size = [stride_size]
-        if 'aux' in it_dict and 'pool_type' in it_dict['aux']:
-            pool_type = it_dict['aux']['pool_type']
+        if 'pool_type' in it_dict:
+            pool_type = it_dict['pool_type']
         else:
             pool_type = 'max'
 
@@ -737,8 +737,8 @@ class ff(object):
             filter_size = [1, filter_size, filter_size, filter_size, 1]
         if not isinstance(stride_size, list):
             filter_size = [1, stride_size, stride_size, stride_size, 1]
-        if 'aux' in it_dict and 'pool_type' in it_dict['aux']:
-            pool_type = it_dict['aux']['pool_type']
+        if 'pool_type' in it_dict:
+            pool_type = it_dict['pool_type']
         else:
             pool_type = 'max'
 

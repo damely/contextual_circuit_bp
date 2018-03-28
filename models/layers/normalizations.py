@@ -11,6 +11,7 @@ from models.layers.normalization_functions import contextual_single_ecrf_time
 from models.layers.normalization_functions import contextual_single_cs
 from models.layers.normalization_functions import old_cc
 from models.layers.normalization_functions import contextual_single_ecrf_ss
+from models.layers.normalization_functions import baseline_context
 
 
 class normalizations(object):
@@ -177,6 +178,21 @@ class normalizations(object):
         self.update_params(aux)
         self.set_RFs(layer=layer, eRF=eRF)
         contextual_layer = old_cc.ContextualCircuit(
+            X=x,
+            timesteps=self.timesteps,
+            SRF=self.SRF,
+            SSN=self.SSN,
+            SSF=self.SSF,
+            strides=self.strides,
+            padding=self.padding,
+            aux=aux)
+        return contextual_layer.build()
+
+    def baseline_context(self, x, layer, eRF, aux):
+        """Contextual model from paper with frozen U & eCRFs."""
+        self.update_params(aux)
+        self.set_RFs(layer=layer, eRF=eRF)
+        contextual_layer = baseline_context.ContextualCircuit(
             X=x,
             timesteps=self.timesteps,
             SRF=self.SRF,

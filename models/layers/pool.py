@@ -94,7 +94,7 @@ class pool(object):
                 k=filter_size,
                 s=stride_size,
                 p=padding)
-        elif pool_type == 'avg':
+        elif pool_type == 'avg' or pool_type == 'mean':
             context, act = avg_pool(
                 self=context,
                 bottom=bottom,

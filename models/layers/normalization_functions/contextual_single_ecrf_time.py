@@ -21,12 +21,12 @@ def auxilliary_variables():
         'train': True,
         'dropout': None,
         # 'separable': False,  # Need C++ implementation.
-        'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
+        'recurrent_nl': tf.nn.leaky_relu,  # tf.nn.leaky_relu, tf.nn.relu, tf.nn.selu
         'gate_nl': tf.nn.sigmoid,
         'ecrf_nl': tf.nn.relu,
         'normal_initializer': True,
         'symmetric_weights': True,  # Lateral weight sharing
-        'symmetric_gate_weights': True,
+        'symmetric_gate_weights': False,
         'gru_gates': False,  # True input reset gate vs. integration gate
         'post_tuning_nl': tf.nn.relu,  # Nonlinearity on crf activity
         'gate_filter': 1,  # Gate kernel size
@@ -34,6 +34,10 @@ def auxilliary_variables():
         'gamma': True,  # Scale P
         'delta': True,  # Scale Q
         'xi': True,  # Scale X
+        'alpha': True,  # divisive CRF
+        'beta': True,  # divisive eCRF
+        'mu': True,  # subtractive CRF
+        'nu': True,  # subtractive eCRF
         'batch_norm': False,
         'integration_type': 'alternate',  # Psych review (mely) or alternate
         'dense_connections': False,  # Dense connections on VGG-style convs
@@ -415,35 +419,100 @@ class ContextualCircuit(object):
                 initializer=tf.ones(self.bias_shape)))
 
         # Degree of freedom weights (vectors)
-        w_array = np.ones([1, 1, 1, self.k]).astype(np.float32)
-        b_array = np.zeros([1, 1, 1, self.k]).astype(np.float32)
+        w_shape = [1, 1, 1, self.k]
+        b_shape = [1, 1, 1, self.k]
+        # w_array = np.ones(w_shape).astype(np.float32)
+        # b_array = np.zeros(b_shape).astype(np.float32)
 
         # Divisive params
-        self.alpha = tf.get_variable(name='alpha', initializer=w_array)
-        self.beta = tf.get_variable(name='beta', initializer=w_array)
+        if self.alpha:
+            self.alpha = tf.get_variable(
+                name='alpha',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
+        else:
+            self.alpha = tf.constant(1.)
+        if self.beta:
+            self.beta = tf.get_variable(
+                name='beta',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
+        else:
+            self.beta = tf.constant(1.)
 
         # Subtractive params
-        self.mu = tf.get_variable(name='mu', initializer=b_array)
-        self.nu = tf.get_variable(name='nu', initializer=b_array)
+        if self.mu:
+            self.mu = tf.get_variable(
+                name='mu',
+                initializer=initialization.xavier_initializer(
+                    shape=b_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
+        else:
+            self.mu = tf.constant(1.)
+        if self.nu:
+            self.nu = tf.get_variable(
+                name='nu',
+                initializer=initialization.xavier_initializer(
+                    shape=b_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
+        else:
+            self.nu = tf.constant(1.)
+
         if self.zeta:
-            self.zeta = tf.get_variable(name='zeta', initializer=w_array)
+            self.zeta = tf.get_variable(
+                name='zeta',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
         else:
             self.zeta = tf.constant(1.)
         if self.gamma:
-            self.gamma = tf.get_variable(name='gamma', initializer=w_array)
+            self.gamma = tf.get_variable(
+                name='gamma',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
         else:
             self.gamma = tf.constant(1.)
         if self.delta:
-            self.delta = tf.get_variable(name='delta', initializer=w_array)
+            self.delta = tf.get_variable(
+                name='delta',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
         else:
             self.delta = tf.constant(1.)
         if self.xi:
-            self.xi = tf.get_variable(name='xi', initializer=w_array)
+            self.xi = tf.get_variable(
+                name='xi',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
         else:
             self.xi = tf.constant(1.)
         if self.multiplicative_excitation:
-            self.kappa = tf.get_variable(name='kappa', initializer=w_array)
-            self.omega = tf.get_variable(name='omega', initializer=w_array)
+            self.kappa = tf.get_variable(
+                name='kappa',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
+            self.omega = tf.get_variable(
+                name='omega',
+                initializer=initialization.xavier_initializer(
+                    shape=w_shape,
+                    uniform=self.normal_initializer,
+                    mask=None))
         else:
             self.kappa = tf.constant(1.)
             self.omega = tf.constant(1.)
@@ -597,8 +666,8 @@ class ContextualCircuit(object):
                     data=data,
                     wm='P',
                     nl=self.post_tuning_nl,
-                    symmetric_weights=self.symmetric_weights,
                     rectify=rectification),
+                symmetric_weights=self.symmetric_weights,
                 weight_key=self.weight_dict['P']['r']['weight'])
         return P
 
@@ -615,7 +684,6 @@ class ContextualCircuit(object):
             else:
                 # Skip connections between surround subfilters
                 if self.batch_norm:
-                    P = batch_norm(P)
                     P = tf.layers.batch_normalization(
                         P,
                         scale=True,
@@ -911,11 +979,10 @@ class ContextualCircuit(object):
                 weights['p_t'] = self.p_r  # Make available for regularization
             if self.store_states:
                 weights['store_I'] = store_I
-                weights['store_O'] = store_O    
+                weights['store_O'] = store_O
             return O, weights, activities
         else:
             if self.store_states:
                 return O  # , store_I, store_O
             else:
                 return O
-

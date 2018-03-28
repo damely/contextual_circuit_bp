@@ -137,7 +137,7 @@ class model_class(object):
         else:
             self.output = tf.identity(output, name='output')
         self.data_dict = None
-        return output, layer_summary
+        return output, layer_summary, data
 
     def default_output_layer(self):
         """Apply a default output layer if none is specified."""

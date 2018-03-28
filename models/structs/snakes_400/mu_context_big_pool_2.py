@@ -2,37 +2,36 @@
 
 layer_structure = [
     {
-        'layers': ['pretrained_conv'],
-        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
-        'alexnet_layer': 's1',
+        'layers': ['alexnet_conv'],
         # 'alexnet_npy': '/media/data_cifs/vveeraba/misc/contextual_circuit_bp/alexnet_cc.npy',
         # 'alexnet_layer': 'conv1_gabors',
-        # 'nonlinearity': 'square',
-        'trainable': False,
+        # 'layers': ['pretrained_conv'],
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/cc_Gaussian_Derivatives_2d_12.npy',
+        # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
+        'alexnet_layer': 's1',
+        'trainable': True,
         'init_bias': True,
         # 'layers': ['conv'],
         'names': ['conv1'],
+        'filter_size': [7],
+        'weights': [12],
         'stride': [1, 1, 1, 1],
-        'weights': [32],
-        'filter_size': [11],
-        # 'normalization': ['batch'],
-        # 'normalization_target': ['post'],
+        'activation': ['relu'],
+        'activation_target': ['post'],
+        'normalization': ['batch'],
+        'normalization_target': ['post'],
     },
-    # {
-    #     'layers': ['conv'],
-    #     'names': ['conv1'],
-    #     'weights': [8],
-    #     'filter_size': [5],
-    # },
     {
         'layers': ['pool'],
+        'filter_size': [8],
+        'stride': [1, 8, 8, 1],
         'names': ['context1'],
         'hardcoded_erfs': {
-            'SRF': 8,
-            'CRF_excitation': 8,
-            'CRF_inhibition': 8,
-            'SSN': 30,  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 30,  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 3,  # or 6
+            'CRF_excitation': 3,
+            'CRF_inhibition': 3,
+            'SSN': 11,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 11,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -42,12 +41,13 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 5,
+            'timesteps': 7,
             'rectify_weights': False,  # False,
             'pre_batchnorm': False,
-            'post_batchnorm': False,
+            'xi': True,
+            'post_batchnorm': True,
             'dense_connections': False,
-            # 'batch_norm': True,
+            'batch_norm': False,
             'atrous_convolutions': False,
             'association_field': True,
             'multiplicative_excitation': False,
@@ -55,12 +55,12 @@ layer_structure = [
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
                 'q_t': {
-                   'regularization_type': 'l1',  # 'orthogonal',
-                   'regularization_strength': 1e-7  # 1e-5  # 0.01
+                   'regularization_type': 'laplace',  # 'orthogonal',
+                   'regularization_strength': 1e-3  # 1e-5  # 0.01
                 },
                 'p_t': {
-                    'regularization_type': 'l1',  # 'laplace',  # 'orthogonal',
-                    'regularization_strength': 1e-7  # 1e-5  # 1.
+                    'regularization_type': 'laplace',  # 'laplace',  # 'orthogonal',
+                    'regularization_strength': 1e-3  # 1e-5  # 1.
                 },
             }
         }
@@ -72,16 +72,16 @@ layer_structure = [
         'filter_size': [1],
         'stride': [1, 1, 1, 1],
         'activation': ['relu'],
-        'activation_target': ['post']
+        'activation_target': ['post'],
+        'normalization': ['batch'],
+        'normalization_target': ['post'],
     },
     {
-        'layers': ['global_pool'],
+        'layers': ['global_pool'],  # avg pool on left, max pool on right
         'weights': [None],
         'names': ['pool2'],
-    #     'normalization': ['batch'],
-    #     'normalization_target': ['post'],
-    #     'activation': ['relu'],
-    #     'activation_target': ['post']
+    #     # 'activation': ['relu'],
+    #     # 'activation_target': ['post']
     }
 ]
 

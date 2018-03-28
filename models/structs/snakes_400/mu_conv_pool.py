@@ -31,11 +31,11 @@ layer_structure = [
     #     # 'normalization': ['batch'],
     #     # 'normalization_target': ['post'],
     # },
-    # {
-    #     'layers': ['pool'],
-    #     'weights': [None],
-    #     'names': ['pool1'],
-    # },
+    {
+        'layers': ['pool'],
+        'weights': [None],
+        'names': ['pool1'],
+    },
     # {
     #     'layers': ['conv'],
     #     'weights': [1],

@@ -2,10 +2,11 @@ import os
 import numpy as np
 import scipy as sp
 from tqdm import tqdm
+from matplotlib import pyplot as plt
 
 
-rot = np.array([90,-67.5,-45,-22.5,0,22.5,45,67.5])
-RF_siz = [15]
+rot = np.arange(-90, 90, 15)  # np.array([90,-67.5,-45,-22.5,0,22.5,45,67.5])
+RF_siz = [7]
 Div = sp.arange(4,3.15,-.05)
 
 
@@ -87,13 +88,13 @@ gabor_dictionary['s1'] = gabor_array,bias
 
 f,x = gabor_dictionary['s1']
 
-# for idx in range(f.shape[-1]):
-#    plt.subplot(1, f.shape[-1], idx + 1)
-#      plt.imshow(f.squeeze()[:, :, idx])
-# plt.show()
+for idx in range(f.shape[-1]):
+    plt.subplot(1, f.shape[-1], idx + 1)
+    plt.imshow(f.squeeze()[:, :, idx])
+plt.show()
 
 ## Save Dictionary ----------------------
-out_name = 'gabors_for_contours_15.npy'
+out_name = 'gabors_for_contours_%s.npy' % RF_siz[0]
 out_path = os.path.join(
     '%smedia' % os.path.sep,
     'data_cifs',
@@ -101,5 +102,4 @@ out_path = os.path.join(
     'pretrained_weights',
     out_name)
 np.save(out_path, gabor_dictionary)
-
 

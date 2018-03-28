@@ -13,12 +13,12 @@ layer_structure = [
         # 'layers': ['conv'],
         'names': ['conv1'],
         'filter_size': [7],
-        'weights': [32],
+        'weights': [12],
         'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post'],
-        # 'normalization': ['batch'],
-        # 'normalization_target': ['post'],
+        'normalization': ['batch'],
+        'normalization_target': ['post'],
     },
     # {
     #     'layers': ['conv'],
@@ -51,15 +51,15 @@ layer_structure = [
     #     'names': ['pool1'],
     #     'filter_size': [8]
     # },
-    # {
-    #     'layers': ['conv'],
-    #     'weights': [2],
-    #     'names': ['conv2'],
-    #     'filter_size': [1],
-    #     'stride': [1, 1, 1, 1],
-    #     'activation': ['relu'],
-    #     'activation_target': ['post']
-    # },
+    {
+        'layers': ['conv'],
+        'weights': [2],
+        'names': ['conv2'],
+        'filter_size': [1],
+        'stride': [1, 1, 1, 1],
+        # 'activation': ['relu'],
+        # 'activation_target': ['post']
+    },
     {
         'layers': ['global_pool'],
         'weights': [None],

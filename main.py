@@ -334,7 +334,7 @@ def main(
                 training=True,
                 output_size=dataset_module.output_size,
                 input_normalization=dataset_module.input_normalization)
-            train_scores, model_summary = model.build(
+            train_scores, model_summary, _ = model.build(
                 data=train_images,
                 layer_structure=model_dict.layer_structure,
                 output_structure=output_structure,
@@ -355,9 +355,12 @@ def main(
                 if exp_params['normalize_labels'] == 'zscore':
                     train_labels -= train_means_label['mean']
                     train_labels /= train_means_label['std']
+                    val_labels -= train_means_label['mean']
+                    val_labels /= train_means_label['std']
                     log.info('Z-scoring labels.')
                 elif exp_params['normalize_labels'] == 'mean':
                     train_labels -= train_means_label['mean']
+                    val_labels -= val_means_label['mean']
                     log.info('Mean-centering labels.')
 
             # Check the shapes of labels and scores
@@ -367,14 +370,19 @@ def main(
                             train_labels.get_shape()):
                     train_shape = train_scores.get_shape().as_list()
                     label_shape = train_labels.get_shape().as_list()
+                    val_shape = val_scores.get_shape().as_list()
+                    val_label_shape = val_labels.get_shape().as_list()
+
                     if len(
                         train_shape) == 2 and len(
                             label_shape) == 1 and train_shape[-1] == 1:
                         train_labels = tf.expand_dims(train_labels, axis=-1)
+                        val_labels = tf.expand_dims(val_labels, axis=-1)
                     elif len(
                         train_shape) == 2 and len(
                             label_shape) == 1 and train_shape[-1] == 1:
                         train_scores = tf.expand_dims(train_scores, axis=-1)
+                        val_scores = tf.expand_dims(val_scores, axis=-1)
 
             # Prepare the loss function
             train_loss, _ = loss_utils.loss_interpreter(
@@ -481,7 +489,7 @@ def main(
                 training=False,
                 output_size=dataset_module.output_size,
                 input_normalization=dataset_module.input_normalization)
-            val_scores, _ = val_model.build(  # Ignore summary
+            val_scores, _, _ = val_model.build(  # Ignore summary
                 data=val_images,
                 layer_structure=model_dict.layer_structure,
                 output_structure=output_structure,
@@ -493,20 +501,7 @@ def main(
                 val_gradients = tf.gradients(target_scores, val_images)[0]
             log.info('Built validation model.')
 
-
             # Check the shapes of labels and scores
-            if not isinstance(train_scores, list):
-                if len(val_scores.get_shape()) != len(val_labels.get_shape()):
-                    val_shape = val_scores.get_shape().as_list()
-                    val_label_shape = val_labels.get_shape().as_list()
-                    if len(
-                        val_shape) == 2 and len(
-                            val_label_shape) == 1 and val_shape[-1] == 1:
-                        val_labels = tf.expand_dims(val_labels, axis=-1)
-                    if len(
-                        val_shape) == 2 and len(
-                            val_label_shape) == 1 and val_shape[-1] == 1:
-                        val_scores = tf.expand_dims(val_scores, axis=-1)
             val_loss, _ = loss_utils.loss_interpreter(
                 logits=val_scores,
                 labels=val_labels,

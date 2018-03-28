@@ -21,7 +21,7 @@ def auxilliary_variables():
         'train': True,
         'dropout': None,
         # 'separable': False,  # Need C++ implementation.
-        'recurrent_nl': tf.nn.tanh,  # tf.nn.leakyrelu, tf.nn.relu, tf.nn.selu
+        'recurrent_nl': tf.nn.leaky_relu,  # tf.nn.leaky_relu, tf.nn.relu, tf.nn.selu
         'gate_nl': tf.nn.sigmoid,
         'ecrf_nl': tf.nn.relu,
         'normal_initializer': True,
@@ -432,7 +432,7 @@ class ContextualCircuit(object):
                 self[self.weight_dict['I']['f']['weight']],
                 self.strides,
                 padding=self.padding)
-            I_update_input = tf.nn.conv2d(
+            I_update_recurrent = tf.nn.conv2d(
                 O,
                 self[self.weight_dict['I']['r']['weight']],
                 self.strides,
@@ -457,7 +457,7 @@ class ContextualCircuit(object):
                 P = tf.minimum(P, 0)
             U = tf.nn.conv2d(
                 O,
-                self[self.weight_dict['U']['r']['tuning']],
+                self[self.weight_dict['U']['r']['weight']],
                 self.strides,
                 padding=self.padding)
         return P, U, I_update
@@ -472,7 +472,7 @@ class ContextualCircuit(object):
                 self[self.weight_dict['O']['f']['weight']],
                 self.strides,
                 padding=self.padding)
-            O_update_input = tf.nn.conv2d(
+            O_update_recurrent = tf.nn.conv2d(
                 I,
                 self[self.weight_dict['O']['r']['weight']],
                 self.strides,

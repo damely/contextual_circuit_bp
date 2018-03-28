@@ -9,7 +9,7 @@ from ops import tf_fun
 
 class data_processing(object):
     def __init__(self):
-        self.name = 'contours_gilbert_256_control'
+        self.name = 'contours_gilbert_256_tight_singleContrast'
         self.im_extension = '.png'
         self.images_dir = 'images'
         self.label_regex = r'(?<=length)\d+'
@@ -22,9 +22,9 @@ class data_processing(object):
         self.default_loss_function = 'cce'
         self.score_metric = 'accuracy'
         self.store_z = False
-        self.normalize_im = True
+        self.normalize_im = False
         self.shuffle = True
-        self.input_normalization = 'zscore'  # 'zscore'
+        self.input_normalization = 'none'  # 'zscore'
         self.preprocess = ['']  # ['resize_nn']
         self.folds = {
             'train': 'train',
@@ -61,7 +61,7 @@ class data_processing(object):
                     '*%s' % self.im_extension)))
         labels = np.asarray(
             [int(re.search(self.label_regex, x).group()) for x in files])
-        labels = (labels > 1).astype(np.int32)
+        labels = (labels > 0).astype(np.int32)
         ul, lc = np.unique(labels, return_counts=True)
         include_count = np.min(lc)
         if self.max_ims:
@@ -100,3 +100,4 @@ class data_processing(object):
             cv_labels[k] = it_labels
             prev_cv = cv_split
         return cv_files, cv_labels
+
