@@ -22,14 +22,14 @@ layer_structure = [
     {
         'layers': ['pool'],
         'filter_size': [7],
-        'stride': [1, 1, 1, 1],
+        'stride': [1, 7, 7, 1],
         'names': ['context1'],
         'hardcoded_erfs': {
-            'SRF': 7,  # or 6
-            'CRF_excitation': 7,
-            'CRF_inhibition': 7,
-            'SSN': 28,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 28,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 1,  # or 6
+            'CRF_excitation': 1,
+            'CRF_inhibition': 1,
+            'SSN': 7,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 7,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -39,7 +39,7 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 5,
+            'timesteps': 10,
             'rectify_weights': True,  # False,
             'pre_batchnorm': False,
             'gate_filter': 1,
