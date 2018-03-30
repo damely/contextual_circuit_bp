@@ -574,7 +574,7 @@ class experiments():
         model_folder = 'snakes_400'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [2e-3],
+            'lr': [1e-3],
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [

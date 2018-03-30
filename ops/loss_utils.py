@@ -10,25 +10,27 @@ def optimizer_interpreter(
         model=None,
         constraints=None):
     """Router for loss functions."""
-    if optimizer == 'adam':
-        return tf.train.AdamOptimizer(lr).minimize(loss)
-    elif optimizer == 'nadam':
-        return tf.contrib.opt.NadamOptimizer(lr).minimize(loss)
-    elif optimizer == 'sgd':
-        return tf.train.GradientDescentOptimizer(lr).minimize(loss)
-    elif optimizer == 'momentum':
-        return momentum(loss=loss, lr=lr)
-    elif optimizer == 'rmsprop':
-        return tf.train.RMSPropOptimizer(lr).minimize(loss)
-    elif optimizer == 'hessian':
-        var_constraints = {model[k]: v for k, v in constraints.iteritems()}
-        return tf.contrib.opt.ScipyOptimizerInterface(
-            loss,
-            options={'maxiter': 1000},
-            var_to_bounds=var_constraints,
-            method='fmin_tnc')
-    else:
-        raise RuntimeError('Cannot understand your loss function.')
+    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    with tf.control_dependencies(update_ops):
+        if optimizer == 'adam':
+            return tf.train.AdamOptimizer(lr).minimize(loss)
+        elif optimizer == 'nadam':
+            return tf.contrib.opt.NadamOptimizer(lr).minimize(loss)
+        elif optimizer == 'sgd':
+            return tf.train.GradientDescentOptimizer(lr).minimize(loss)
+        elif optimizer == 'momentum':
+            return momentum(loss=loss, lr=lr)
+        elif optimizer == 'rmsprop':
+            return tf.train.RMSPropOptimizer(lr).minimize(loss)
+        elif optimizer == 'hessian':
+            var_constraints = {model[k]: v for k, v in constraints.iteritems()}
+            return tf.contrib.opt.ScipyOptimizerInterface(
+                loss,
+                options={'maxiter': 1000},
+                var_to_bounds=var_constraints,
+                method='fmin_tnc')
+        else:
+            raise RuntimeError('Cannot understand your loss function.')
 
 
 def momentum(loss, lr, momentum=0.9):
