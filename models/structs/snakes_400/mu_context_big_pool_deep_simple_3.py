@@ -23,15 +23,15 @@ layer_structure = [
     },
     {
         'layers': ['pool'],
-        'filter_size': [6],
+        'filter_size': [3],
         'stride': [1, 3, 3, 1],
         'names': ['context1'],
         'hardcoded_erfs': {
-            'SRF': 1,  # or 6
-            'CRF_excitation': 1,
-            'CRF_inhibition': 1,
-            'SSN': 5,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 5,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 2,  # or 6
+            'CRF_excitation': 2,
+            'CRF_inhibition': 2,
+            'SSN': 10,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 10,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -41,12 +41,12 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 10,
-            'rectify_weights': False,  # False,
+            'timesteps': 7,
+            'rectify_weights': True,  # False,
             'pre_batchnorm': False,
             'gate_filter': 1,
             'xi': True,
-            'post_batchnorm': True,
+            'post_batchnorm': False,
             'dense_connections': False,
             'symmetric_weights': True,  # Lateral weight sharing
             'symmetric_gate_weights': False,
@@ -57,10 +57,6 @@ layer_structure = [
             'gru_gates': False,
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
-                'q_t': {
-                   'regularization_type': 'laplace',  # 'orthogonal',
-                   'regularization_strength': 1e-3  # 1e-5  # 0.01
-                },
                 'p_t': {
                     'regularization_type': 'laplace',  # 'laplace',  # 'orthogonal',
                     'regularization_strength': 1e-3  # 1e-5  # 1.
@@ -97,3 +93,4 @@ output_structure = [
         'names': ['fc2'],
     }
 ]
+

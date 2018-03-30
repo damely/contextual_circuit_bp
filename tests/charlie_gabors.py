@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 rot = np.arange(-90, 90, 15)  # np.array([90,-67.5,-45,-22.5,0,22.5,45,67.5])
 RF_siz = [7]
 Div = sp.arange(4,3.15,-.05)
+plot_filters = False
 
 
 def create_gabor(rot,RF_siz,Div,plot,num=10):
@@ -87,11 +88,13 @@ gabor_dictionary = {}
 gabor_dictionary['s1'] = gabor_array,bias
 
 f,x = gabor_dictionary['s1']
-
-for idx in range(f.shape[-1]):
-    plt.subplot(1, f.shape[-1], idx + 1)
-    plt.imshow(f.squeeze()[:, :, idx])
-plt.show()
+bg_filter = (np.ones((f.shape[:2])).astype(np.float32) / np.sum(f.shape[:2]))[:, :, None, None]
+f = np.concatenate((f, bg_filter), axis=-1)
+if plot_filters:
+    for idx in range(f.shape[-1]):
+        plt.subplot(1, f.shape[-1], idx + 1)
+        plt.imshow(f.squeeze()[:, :, idx])
+    plt.show()
 
 ## Save Dictionary ----------------------
 out_name = 'gabors_for_contours_%s.npy' % RF_siz[0]

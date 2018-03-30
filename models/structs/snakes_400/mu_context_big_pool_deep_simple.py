@@ -41,12 +41,12 @@ layer_structure = [
         'normalization': ['contextual_single_ecrf_time'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 10,
-            'rectify_weights': False,  # False,
+            'timesteps': 7,
+            'rectify_weights': True,  # False,
             'pre_batchnorm': False,
             'gate_filter': 1,
             'xi': True,
-            'post_batchnorm': True,
+            'post_batchnorm': False,
             'dense_connections': False,
             'symmetric_weights': True,  # Lateral weight sharing
             'symmetric_gate_weights': False,
@@ -57,10 +57,6 @@ layer_structure = [
             'gru_gates': False,
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
-                'q_t': {
-                   'regularization_type': 'laplace',  # 'orthogonal',
-                   'regularization_strength': 1e-3  # 1e-5  # 0.01
-                },
                 'p_t': {
                     'regularization_type': 'laplace',  # 'laplace',  # 'orthogonal',
                     'regularization_strength': 1e-3  # 1e-5  # 1.
@@ -97,3 +93,4 @@ output_structure = [
         'names': ['fc2'],
     }
 ]
+

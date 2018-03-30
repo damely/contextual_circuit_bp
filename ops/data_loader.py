@@ -176,8 +176,11 @@ def image_augmentations(
         if 'center_crop' in data_augmentations and im_size_check:
             image = center_crop(image, model_input_image_size)
             print 'Applying center crop.'
+        if 'uint8_rescale' in data_augmentations:
+            image = tf.cast(image, tf.float32) / 255.
+            print 'Applying uint8 rescale.'
         if 'grayscale' in data_augmentations and im_size_check:
-            image = tf.image.rgb_to_grayscale(image)
+            image = tf.expand_dims(image[:, :, 0], axis=-1)
             print 'Converting to grayscale.'
         if 'random_crop_image_label' in data_augmentations and im_size_check:
             assert len(image.get_shape()) == 3, '4D not implemented yet.'
@@ -333,9 +336,6 @@ def image_augmentations(
         if 'threshold' in data_augmentations:
             image = tf.cast(tf.greater(image, 0), tf.float32)
             print 'Applying threshold.'
-        if 'uint8_rescale' in data_augmentations:
-            image = tf.cast(image, tf.float32) / 255.
-            print 'Applying uint8 rescale.'
     else:
         assert len(image.get_shape()) == 3, '4D not implemented yet.'
         image = tf.image.resize_image_with_crop_or_pad(

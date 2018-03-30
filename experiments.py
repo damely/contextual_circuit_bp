@@ -574,7 +574,7 @@ class experiments():
         model_folder = 'snakes_400'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [3e-4],
+            'lr': [2e-3],
             'loss_function': ['cce'],
             'optimizer': ['nadam'],
             'model_struct': [
@@ -584,8 +584,16 @@ class experiments():
                 #     model_folder, 'mu_context_big_pool'),
                 # os.path.join(
                 #     model_folder, 'mu_context_big_pool_2'),
+                # os.path.join(
+                #     model_folder, 'mu_context_big_pool_deep'),
                 os.path.join(
-                    model_folder, 'mu_context_big_pool_deep'),
+                    model_folder, 'fixed_context'),
+                # os.path.join(
+                #     model_folder, 'mu_context_big_pool_deep_simple'),
+                # os.path.join(
+                #     model_folder, 'mu_context_big_pool_deep_simple_2'),
+                # os.path.join(
+                #     model_folder, 'mu_context_big_pool_deep_simple_3'),
                 # os.path.join(
                 #     model_folder, 'mu_context_big_pool_nbn'),
                 # os.path.join(
@@ -618,10 +626,11 @@ class experiments():
                 #     model_folder, 'mu_conv_3_pool'),
             ],
             # 'dataset': ['contours_gilbert_256_tight_control']
-            'dataset': ['contours_gilbert_256_bounded']
+            # 'dataset': ['contours_gilbert_256_bounded']
+            'dataset': ['contours_gilbert_256_centerControl']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['grayscale', 'left_right', 'up_down', 'uint8_rescale']]
+        exp['data_augmentations'] = [['grayscale', 'left_right', 'up_down', 'uint8_rescale']] # , 'center_crop']]
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]
@@ -629,10 +638,11 @@ class experiments():
             # 'grayscale',
             # 'left_right',
             # 'up_down']]  # , 'rotate']]
-        exp['batch_size'] = 10  # Train/val batch size.
+        exp['batch_size'] = 15  # Train/val batch size.
         exp['epochs'] = 50
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 100  # 200
         exp['shuffle_val'] = True
         return exp
+

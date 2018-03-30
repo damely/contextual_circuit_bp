@@ -14,7 +14,7 @@ def auxilliary_variables():
         'lesions': [None],  # ['Q', 'T', 'P', 'U'],
         'dtype': tf.float32,
         'return_weights': True,
-        'hidden_init': 'random',
+        'hidden_init': 'identity',
         'association_field': True,
         'tuning_nl': tf.nn.relu,
         'store_states': False,
@@ -25,7 +25,7 @@ def auxilliary_variables():
         'gate_nl': tf.nn.sigmoid,
         'ecrf_nl': tf.nn.relu,
         'normal_initializer': True,
-        'symmetric_weights': True,  # Lateral weight sharing
+        'symmetric_weights': False,  # Lateral weight sharing
         'symmetric_gate_weights': False,
         'gru_gates': False,  # True input reset gate vs. integration gate
         'post_tuning_nl': tf.nn.relu,  # Nonlinearity on crf activity
@@ -173,20 +173,12 @@ class ContextualCircuit(object):
                     'bias': 'i_b',
                     'activity': 'I_r'
                 },
-                'f': {  # Recurrent state
-                    'weight': 'i_f',
-                    'activity': 'I_f'
-                },
             },
             'O': {
                 'r': {  # Recurrent state
                     'weight': 'o_r',
                     'bias': 'o_b',
                     'activity': 'O_r'
-                },
-                'f': {  # Recurrent state
-                    'weight': 'o_f',
-                    'activity': 'O_f'
                 },
             },
             'xi': {
@@ -707,10 +699,6 @@ class ContextualCircuit(object):
         """Circuit input operates on recurrent output (O)."""
 
         # Input gates
-        I_update_input = self.conv_2d_op(
-            data=self.X,
-            weight_key=self.weight_dict['I']['f']['weight'],
-            symmetric_weights=self.symmetric_gate_weights)
         I_update_recurrent = self.conv_2d_op(
             data=O,
             weight_key=self.weight_dict['I']['r']['weight'],
@@ -719,13 +707,13 @@ class ContextualCircuit(object):
         # Calculate and apply dropout if requested
         if self.train and self.dropout is not None:
             I_update = self.zoneout(self.dropout) * self.gate_nl(
-                I_update_input + I_update_recurrent)
+                I_update_recurrent)
         elif not self.train and self.dropout is not None:
             I_update = (1 / self.dropout) * self.gate_nl(
-                I_update_input + I_update_recurrent)
+                I_update_recurrent)
         else:
             I_update = self.gate_nl(
-                I_update_input + I_update_recurrent + self[
+                I_update_recurrent + self[
                     self.weight_dict['I']['r']['bias']])
 
         if self.gru_gates:
@@ -756,10 +744,6 @@ class ContextualCircuit(object):
     def circuit_output(self, I):
         """Circuit output operates on recurrent input (I)."""
         # Output gates
-        O_update_input = self.conv_2d_op(
-            data=self.X,
-            weight_key=self.weight_dict['O']['f']['weight'],
-            symmetric_weights=self.symmetric_gate_weights)
         O_update_recurrent = self.conv_2d_op(
             data=I,
             weight_key=self.weight_dict['O']['r']['weight'],
@@ -768,13 +752,13 @@ class ContextualCircuit(object):
         # Calculate and apply dropout if requested
         if self.train and self.dropout is not None:
             O_update = self.zoneout(self.dropout) * self.gate_nl(
-                O_update_input + O_update_recurrent)
+                O_update_recurrent)
         elif not self.train and self.dropout is not None:
             O_update = (1 / self.dropout) * self.gate_nl(
-                O_update_input + O_update_recurrent)
+                O_update_recurrent)
         else:
             O_update = self.gate_nl(
-                O_update_input + O_update_recurrent + self[
+                O_update_recurrent + self[
                     self.weight_dict['O']['r']['bias']])
 
         # eCRF Excitation
@@ -979,10 +963,11 @@ class ContextualCircuit(object):
                 weights['p_t'] = self.p_r  # Make available for regularization
             if self.store_states:
                 weights['store_I'] = store_I
-                weights['store_O'] = store_O
+                weights['store_O'] = store_O    
             return O, weights, activities
         else:
             if self.store_states:
                 return O  # , store_I, store_O
             else:
                 return O
+

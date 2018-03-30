@@ -82,14 +82,12 @@ def training_loop(
             train_vars = sess.run(train_dict.values())
             it_train_dict = {k: v for k, v in zip(
                 train_dict.keys(), train_vars)}
-            duration = time.time() - start_time
-            ####
             loss_diff = it_train_dict['train_loss'] - prev_loss
-            if loss_diff > 0.5 and step > 1000:
+            if step > 500 and loss_diff > 0.4:
                 import ipdb;ipdb.set_trace()
             prev_loss = it_train_dict['train_loss']
-            ####
-
+            prev_dict = it_train_dict
+            duration = time.time() - start_time
             train_losses[step] = it_train_dict['train_loss']
             train_accs[step] = it_train_dict['train_accuracy_0']
             timesteps[step] = duration

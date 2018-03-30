@@ -49,3 +49,12 @@ class activations(object):
     def round(self, x, **kwargs):
         """Elementwise round."""
         return tf.round(x)
+
+    def softmax(self, x, **kwargs):
+        """Elementwise softmax."""
+        return tf.nn.softmax(x, axis=-1)
+
+    def square(self, x, **kwargs):
+        """Elementwise square."""
+        return tf.pow(x, 2)
+
