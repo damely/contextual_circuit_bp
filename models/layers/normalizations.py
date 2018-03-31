@@ -13,7 +13,7 @@ from models.layers.normalization_functions import old_cc
 from models.layers.normalization_functions import contextual_single_ecrf_ss
 from models.layers.normalization_functions import baseline_context
 from models.layers.normalization_functions import contextual_single_ecrf_simple
-
+from models.layers.normalization_functions import contextual_single_ecrf_simple_timesteps
 
 class normalizations(object):
     """Wrapper class for activation functions."""
@@ -179,6 +179,21 @@ class normalizations(object):
         self.update_params(aux)
         self.set_RFs(layer=layer, eRF=eRF)
         contextual_layer = contextual_single_ecrf_simple.ContextualCircuit(
+            X=x,
+            timesteps=self.timesteps,
+            SRF=self.SRF,
+            SSN=self.SSN,
+            SSF=self.SSF,
+            strides=self.strides,
+            padding=self.padding,
+            aux=aux)
+        return contextual_layer.build()
+
+    def contextual_single_ecrf_simple_timesteps(self, x, layer, eRF, aux):
+        """Contextual model from paper with frozen U & eCRFs."""
+        self.update_params(aux)
+        self.set_RFs(layer=layer, eRF=eRF)
+        contextual_layer = contextual_single_ecrf_simple_timesteps.ContextualCircuit(
             X=x,
             timesteps=self.timesteps,
             SRF=self.SRF,

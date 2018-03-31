@@ -9,7 +9,7 @@ layer_structure = [
         # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/cc_Gaussian_Derivatives_2d_12.npy',
         'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
         'alexnet_layer': 's1',
-        'trainable': True,
+        'trainable': False,
         'init_bias': True,
         # 'layers': ['conv'],
         'names': ['conv1'],
@@ -18,32 +18,30 @@ layer_structure = [
         'stride': [1, 1, 1, 1],
         'activation': ['square'],
         'activation_target': ['post'],
-        'normalization': ['batch'],
-        'normalization_target': ['post'],
     },
     {
         'layers': ['pool'],
-        'filter_size': [3],
-        'stride': [1, 3, 3, 1],
+        'filter_size': [4],
+        'stride': [1, 4, 4, 1],
         'names': ['context1'],
         'hardcoded_erfs': {
             'SRF': 1,  # or 6
-            'CRF_excitation': 1,
-            'CRF_inhibition': 1,
-            'SSN': 7,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 7,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'CRF_excitation': 15,
+            'CRF_inhibition': 15,
+            'SSN': 15,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 15,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
             # 'SSN': [6, 6, 6],  # Atrous VGG-style
             # 'SSF': [6, 6, 6]
         },
-        'normalization': ['contextual_single_ecrf_time'],
+        'normalization': ['contextual_single_ecrf_simple'],
         'normalization_target': ['post'],
         'normalization_aux': {
-            'timesteps': 5,
+            'timesteps': 7,
             'rectify_weights': True,  # False,
-            'pre_batchnorm': False,
+            'pre_batchnorm': True,
             'gate_filter': 1,
             'xi': False,
             'post_batchnorm': False,
@@ -57,10 +55,6 @@ layer_structure = [
             'gru_gates': False,
             'trainable': True,
             'regularization_targets': {  # Modulate sparsity
-                'q_t': {
-                   'regularization_type': 'l1',  # 'orthogonal',
-                   'regularization_strength': 1e-8  # 1e-5  # 0.01
-                },
                 'p_t': {
                     'regularization_type': 'l1',  # 'laplace',  # 'orthogonal',
                     'regularization_strength': 1e-8  # 1e-5  # 1.
@@ -78,8 +72,6 @@ layer_structure = [
         'normalization_target': ['pre'],
     },
     {
-        'normalization': ['batch'],
-        'normalization_target': ['pre'],
         'layers': ['global_max_pool'],  # avg pool on left, max pool on right
         'weights': [None],
         'names': ['pool2'],

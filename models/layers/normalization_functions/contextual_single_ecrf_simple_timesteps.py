@@ -73,6 +73,9 @@ class ContextualCircuit(object):
         self.padding = padding
         self.train = train
 
+        # Repeat self.X timesteps times
+        self.X = tf.stack([X for t in range(self.timesteps)], axis=1)
+
         # Sort through and assign the auxilliary variables
         aux_vars = auxilliary_variables()
         if aux is not None and isinstance(aux, dict):
@@ -641,7 +644,7 @@ class ContextualCircuit(object):
 
         # Input gates
         I_update_input = self.conv_2d_op(
-            data=self.X,
+            data=it_X,
             weight_key=self.weight_dict['I']['f']['weight'],
             symmetric_weights=self.symmetric_gate_weights)
         I_update_recurrent = self.conv_2d_op(
@@ -678,11 +681,11 @@ class ContextualCircuit(object):
 
         return P, I_update
 
-    def circuit_output(self, I):
+    def circuit_output(self, I, it_X):
         """Circuit output operates on recurrent input (I)."""
         # Output gates
         O_update_input = self.conv_2d_op(
-            data=self.X,
+            data=it_X,
             weight_key=self.weight_dict['O']['f']['weight'],
             symmetric_weights=self.symmetric_gate_weights)
         O_update_recurrent = self.conv_2d_op(
@@ -715,33 +718,10 @@ class ContextualCircuit(object):
 
         return P, O_update
 
-    def mely_input_integration(self, P, I, O, I_update):
+    def input_integration(self, P, I, O, I_update, it_X):
         """Integration on the input."""
         I_summand = self.recurrent_nl(
-            (self.xi * self.X) -
-            ((self.beta * I + self.nu) * P))
-        if not self.gru_gates:
-            # Alternatively, forget gates on the input
-            return (I_update * I) + ((1 - I_update) * I_summand)
-        else:
-            return I_summand
-
-    def mely_output_integration(self, P, I, O, O_update):
-        """Integration on the output."""
-        if self.multiplicative_excitation:
-            # Multiplicative gating I * (P + Q)
-            O_summand = self.recurrent_nl(
-                self.zeta * I * ((self.gamma * P)))
-        else:
-            # Additive gating I + P + Q
-            O_summand = self.recurrent_nl(
-                self.zeta * I + self.gamma * P)
-        return (O_update * O) + ((1 - O_update) * O_summand)
-
-    def input_integration(self, P, I, O, I_update):
-        """Integration on the input."""
-        I_summand = self.recurrent_nl(
-            (self.xi * self.X) -
+            (self.xi * it_X) -
             ((self.beta * O + self.nu) * P))
         if not self.gru_gates:
             # Alternatively, forget gates on the input
@@ -749,7 +729,7 @@ class ContextualCircuit(object):
         else:
             return I_summand
 
-    def output_integration(self, P, I, O, O_update):
+    def output_integration(self, P, I, O, O_update, it_X):
         """Integration on the output."""
         if self.multiplicative_excitation:
             # Multiplicative gating I * (P + Q)
@@ -775,25 +755,30 @@ class ContextualCircuit(object):
     def full(self, i0, O, I, store_O=None, store_I=None):
         """Contextual circuit body."""
 
+        # Gather X at this timestep
+        it_X = tf.gather(self.X, i0, axis=1)
+
         # -- Circuit input receives recurrent output (O)
-        P, I_update = self.circuit_input(O)
+        P, I_update = self.circuit_input(O, it_X)
 
         # Calculate input (-) integration
         I = self.ii(
             P=P,
             I=I,
             O=O,
-            I_update=I_update)
+            I_update=I_update,
+            it_X=it_X)
 
         # -- Circuit output receives recurrent input (I)
-        P, O_update = self.circuit_output(I)
+        P, O_update = self.circuit_output(I, it_X)
 
         # Calculate output (+) integration
         O = self.oi(
             P=P,
             I=I,
             O=O,
-            O_update=O_update)
+            O_update=O_update,
+            it_X=it_X)
 
         if self.store_states:
             store_I.write(i0, I)

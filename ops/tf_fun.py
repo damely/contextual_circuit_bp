@@ -1,5 +1,23 @@
 import numpy as np
 import tensorflow as tf
+import json
+
+
+def count_parameters(var_list, print_count=False):
+    """Count the parameters in a tf model."""
+    params = []
+    for v in var_list:
+        params += [
+            np.maximum(
+                np.prod(
+                    [x for x in v.get_shape().as_list()
+                        if x > 1]), 1)]
+    param_list = [
+        (p, v.get_shape().as_list()) for p, v in zip(
+            params, var_list)]
+    if print_count:
+        print json.dumps(param_list, indent=4)
+    return np.sum(params)
 
 
 def bytes_feature(values):

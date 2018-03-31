@@ -370,19 +370,12 @@ def main(
                             train_labels.get_shape()):
                     train_shape = train_scores.get_shape().as_list()
                     label_shape = train_labels.get_shape().as_list()
-                    val_shape = val_scores.get_shape().as_list()
-                    val_label_shape = val_labels.get_shape().as_list()
 
                     if len(
                         train_shape) == 2 and len(
                             label_shape) == 1 and train_shape[-1] == 1:
                         train_labels = tf.expand_dims(train_labels, axis=-1)
-                        val_labels = tf.expand_dims(val_labels, axis=-1)
-                    elif len(
-                        train_shape) == 2 and len(
-                            label_shape) == 1 and train_shape[-1] == 1:
                         train_scores = tf.expand_dims(train_scores, axis=-1)
-                        val_scores = tf.expand_dims(val_scores, axis=-1)
 
             # Prepare the loss function
             train_loss, _ = loss_utils.loss_interpreter(
@@ -502,6 +495,20 @@ def main(
             log.info('Built validation model.')
 
             # Check the shapes of labels and scores
+            if not isinstance(val_scores, list):
+                if len(
+                        val_scores.get_shape()) != len(
+                            val_labels.get_shape()):
+                    val_shape = val_scores.get_shape().as_list()
+                    val_label_shape = val_labels.get_shape().as_list()
+
+                    if len(
+                        val_shape) == 2 and len(
+                            val_label_shape) == 1 and val_shape[-1] == 1:
+                        val_labels = tf.expand_dims(val_labels, axis=-1)
+                        val_scores = tf.expand_dims(val_scores, axis=-1)
+
+            # Check the shapes of labels and scores
             val_loss, _ = loss_utils.loss_interpreter(
                 logits=val_scores,
                 labels=val_labels,
@@ -582,6 +589,11 @@ def main(
         var_list=tf.global_variables(),
         max_to_keep=config.max_to_keep)
     summary_op = tf.summary.merge_all()
+
+    # Count parameters if requested
+    if config.count_parameters:
+        num_params = tf_fun.count_parameters(tf.trainable_variables())
+        print 'Number of parameters in model: %s' % num_params
 
     # Initialize the graph
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))

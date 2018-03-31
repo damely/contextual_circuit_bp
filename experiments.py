@@ -38,7 +38,8 @@ class experiments():
             'optimizer_constraints': None,  # A {var name: bound} dictionary.
             'resize_output': None,  # Postproc resize the output (FC models).
             'dataloader_override': False,  # Dataloader output overrides model.
-            'tensorboard_images': True
+            'tensorboard_images': True,
+            'count_parameters': True
         }
 
     def add_globals(self, exp):
@@ -90,13 +91,14 @@ class experiments():
             'timesteps': [5],
             'model_struct': [
                 # os.path.join(model_folder, 'divisive_paper_rfs'),
-                os.path.join(model_folder, 'contextual_paper_rfs'),
+                # os.path.join(model_folder, 'contextual_paper_rfs'),
+                os.path.join(model_folder, 'bp_contextual_paper_rfs'),
                 # os.path.join(model_folder, 'contextual_ss_paper_rfs'),
                 # os.path.join(model_folder, 'divisive'),
                 # os.path.join(model_folder, 'contextual')
             ],
-            'dataset': ['contextual_model_multi_stimuli']
-            # 'dataset': ['contextual_model_stimuli']
+            # 'dataset': ['contextual_model_multi_stimuli']
+            'dataset': ['contextual_model_stimuli']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[None]]
@@ -588,6 +590,10 @@ class experiments():
                 #     model_folder, 'mu_context_big_pool_deep'),
                 os.path.join(
                     model_folder, 'fixed_context'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_2'),
+                # os.path.join(
+                #     model_folder, 'mu_conv_3'),
                 # os.path.join(
                 #     model_folder, 'mu_context_big_pool_deep_simple'),
                 # os.path.join(
