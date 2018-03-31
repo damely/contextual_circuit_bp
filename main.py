@@ -578,6 +578,8 @@ def main(
             log.info('Added validation summaries.')
 
     # Set up summaries and saver
+    if not hasattr(config, 'max_to_keep'):
+        config.max_to_keep = None
     saver = tf.train.Saver(
         var_list=tf.global_variables(),
         max_to_keep=config.max_to_keep)

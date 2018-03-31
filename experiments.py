@@ -32,13 +32,11 @@ class experiments():
             'validation_iters': 5000,  # How often to evaluate validation.
             'num_validation_evals': 100,  # How many validation batches.
             'top_n_validation': 0,  # Set to 0 to save all checkpoints.
-            'max_to_keep': 10,  # Max checkpoints to keep
             'early_stop': False,  # Stop training if the loss stops improving.
             'save_weights': False,  # Save model weights on validation evals.
             'optimizer_constraints': None,  # A {var name: bound} dictionary.
             'resize_output': None,  # Postproc resize the output (FC models).
-            'dataloader_override': False,  # Dataloader output overrides model.
-            'tensorboard_images': True
+            'dataloader_override': False  # Dataloader output overrides model.
         }
 
     def add_globals(self, exp):
@@ -110,49 +108,40 @@ class experiments():
         model_folder = 'contours'
         exp = {
             'experiment_name': [model_folder],
-            'lr': [1e-3],
+            'lr': [3e-4],
             'loss_function': ['pearson'],
-            'optimizer': ['nadam'],
+            'optimizer': ['adam'],
             # 'q_t': [1e-3, 1e-1],
             # 'p_t': [1e-2, 1e-1, 1],
             # 't_t': [1e-2, 1e-1, 1],
             'timesteps': [3],
             'model_struct': [
                 # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_1'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_2'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_3'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_4'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_5'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_6'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_7'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_8'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_9'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_10'),
+                #     model_folder, 'context_conv2d'),
                 os.path.join(
-                    model_folder, 'context_association_single_conv2d'),
+                    model_folder, 'context_association_conv2d'),
                 # os.path.join(
-                #     model_folder, 'conv2d'),
+                #     model_folder, 'context_association_l1_conv2d'),
                 # os.path.join(
-                #     model_folder, 'conv2d_equal'),
+                #     model_folder, 'context_association_full_full_conv2d'),
                 # os.path.join(
-                #     model_folder, 'conv2d_3l'),
+                #     model_folder, 'context_association_full_hole_conv2d'),
+                # os.path.join(
+                #     model_folder, 'context_association_crf_hole_conv2d'),
+                os.path.join(
+                    model_folder, 'context_association_l1_full_full_conv2d'),
+                # os.path.join(
+                #     model_folder, 'context_association_l1_full_hole_conv2d'),
+                # os.path.join(
+                #     model_folder, 'context_association_l1_crf_hole_conv2d'),
+                os.path.join(
+                    model_folder, 'conv2d'),
             ],
             'dataset': ['BSDS500']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
         exp['data_augmentations'] = [[
-            'resize_image_label'
-            # 'random_crop_image_label',
+            'random_crop_image_label',
             # 'lr_flip_image_label',
             # 'ud_flip_image_label'
             ]]
@@ -162,67 +151,7 @@ class experiments():
         exp['save_weights'] = True
         exp['validation_iters'] = 500
         exp['num_validation_evals'] = 10
-        # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
-        return exp
-
-    def places_contours(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'contours'
-        exp = {
-            'experiment_name': [model_folder],
-            'lr': [1e-3],
-            'loss_function': ['pearson'],
-            'optimizer': ['nadam'],
-            # 'q_t': [1e-3, 1e-1],
-            # 'p_t': [1e-2, 1e-1, 1],
-            # 't_t': [1e-2, 1e-1, 1],
-            'timesteps': [3],
-            'model_struct': [
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_1'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_2'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_3'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_4'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_5'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_6'),
-                os.path.join(
-                     model_folder, 'context_association_single_conv2d_7'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_8'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_9'),
-                # os.path.join(
-                #      model_folder, 'context_association_single_conv2d_10'),
-                # os.path.join(
-                #     model_folder, 'context_association_full_full_conv2d'),
-                os.path.join(
-                    model_folder, 'conv2d'),
-                # os.path.join(
-                #     model_folder, 'conv2d_equal'),
-                # os.path.join(
-                #     model_folder, 'conv2d_3l'),
-            ],
-            'dataset': ['places_boundaries']  # ['BSDS500']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [[
-            'resize_image_label'
-            # 'random_crop_image_label',
-            # 'lr_flip_image_label',
-            # 'ud_flip_image_label'
-            ]]
-        # exp['val_augmentations'] = [['center_crop_image_label']]
-        exp['batch_size'] = 10  # Train/val batch size.
-        exp['epochs'] = 1000
-        exp['save_weights'] = True
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 10
-        # exp['resize_output'] = [[107, 160]]  # [[150, 240]]
+        exp['resize_output'] = [[150, 240]]
         return exp
 
     def ALLEN_random_cells_103(self):
@@ -426,8 +355,8 @@ class experiments():
         exp = {
             'experiment_name': [model_folder],
             'lr': [3e-4],  # , 1e-4],
-            'loss_function': ['cce@cce'],
-            # 'loss_function': ['cce@zero'],
+            # 'loss_function': ['cce@cce'],
+            'loss_function': ['cce@zero'],
             'optimizer': ['nadam'],
             'model_struct': [
                 # os.path.join(model_folder, 'narrow_gru_nm'),
@@ -462,177 +391,34 @@ class experiments():
         exp['save_validation_predictions'] = True
         return exp
 
-    def crcns_2d_gcampf(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'crcns_2d_gcampf'
+
+    def MULTIALLEN_VISpDmGsALjLEDSAFgNp(self):
+        """MULTIALLEN_VISpDmGsALjLEDSAFgNp ST multi-experiment creation."""
+        model_folder = 'MULTIALLEN_VISpDmGsALjLEDSAFgNp'
         exp = {
-            'experiment_name': [model_folder],
+            'experiment_name': ['MULTIALLEN_VISpDmGsALjLEDSAFgNp'],
             'lr': [3e-4],
-            'loss_function': ['cce'],
-            'optimizer': ['nadam'],
+            'loss_function': ['pearson'],
+            'optimizer': ['adam'],
             'model_struct': [
-                os.path.join(model_folder, 'narrow_gru'),
+                # os.path.join(model_folder, 'complete_sep_conv3d'),
+                # os.path.join(model_folder, 'time_sep_conv3d'),
+                os.path.join(model_folder, 'gru2d'),
+                os.path.join(model_folder, 'alexnet_gru2d'),
+                os.path.join(model_folder, 'sgru2d'),
+                os.path.join(model_folder, 'alexnet_sgru2d')
             ],
-            'dataset': ['crcns_2d_gcampf']
+            'dataset': ['MULTIALLEN_VISpDmGsALjLEDSAFgNp']
         }
         exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['epochs'] = 100
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 629  # 225
-        exp['batch_size'] = 16  # Train/val batch size.
-        exp['save_weights'] = True
-        exp['data_augmentations'] = [
-            [
-                # None
-                'resize_and_crop',
-                'left_right',
-                'up_down',
-                # 'rotate'
-            ]
-        ]
-        exp['pr_curve'] = True
-        exp['save_validation_predictions'] = True
-        return exp
-
-    def snakes(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'snakes'
-        exp = {
-            'experiment_name': [model_folder],
-            'lr': [1e-3],
-            'loss_function': ['cce'],
-            'optimizer': ['nadam'],
-            'model_struct': [
-                # os.path.join(
-                #     model_folder, 'context_association_single_conv2d'),
-                # os.path.join(
-                #     model_folder, 'conv2d'),
-                os.path.join(
-                    model_folder, 'mu_context'),
-                # os.path.join(
-                #     model_folder, 'mu_conv'),
-            ],
-            'dataset': ['contours_gilbert_600']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['grayscale_slice', 'center_crop']]  # , 'left_right', 'up_down', 'rotate']]
-        exp['val_augmentations'] = [['grayscale_slice', 'center_crop']]  # , 'left_right', 'up_down', 'rotate']]
-        exp['batch_size'] = 5  # Train/val batch size.
-        exp['epochs'] = 1000
-        exp['save_weights'] = True
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 200
-        exp['shuffle_val'] = True
-        return exp
-
-    def snakes_256(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'snakes_256'
-        exp = {
-            'experiment_name': [model_folder],
-            'lr': [1e-3],
-            'loss_function': ['cce'],
-            'optimizer': ['nadam'],
-            'model_struct': [
-                # os.path.join(
-                #   model_folder, 'mu_context'),
-                # os.path.join(
-                #    model_folder, 'mu_context_ga'),
-                os.path.join(
-                    model_folder, 'mu_conv'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_2'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_3'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_2_pool'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_3_pool'),
-            ],
-            'dataset': ['contours_gilbert_256_length_0']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [[
-            'grayscale',
-            'left_right',
-            # 'gaussian_noise',
-            'up_down']]  # , 'rotate']]
-        exp['val_augmentations'] = [[
-            'grayscale',
-            'left_right',
-            'up_down']]  # , 'rotate']]
-        exp['batch_size'] = 8  # Train/val batch size.
-        exp['epochs'] = 20
-        exp['save_weights'] = True
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 100  # 200
-        exp['shuffle_val'] = True
-        return exp
-
-    def snakes_400(self):
-        """Each key in experiment_dict must be manually added to the schema."""
-        model_folder = 'snakes_400'
-        exp = {
-            'experiment_name': [model_folder],
-            'lr': [3e-4],
-            'loss_function': ['cce'],
-            'optimizer': ['nadam'],
-            'model_struct': [
-                # os.path.join(
-                #     model_folder, 'mu_context'),
-                # os.path.join(
-                #     model_folder, 'mu_context_big_pool'),
-                # os.path.join(
-                #     model_folder, 'mu_context_big_pool_2'),
-                os.path.join(
-                    model_folder, 'mu_context_big_pool_deep'),
-                # os.path.join(
-                #     model_folder, 'mu_context_big_pool_nbn'),
-                # os.path.join(
-                #     model_folder, 'mu_context_t2'),
-                # os.path.join(
-                #     model_folder, 'mu_context_hierarchy'),
-                # os.path.join(
-                #    model_folder, 'mu_context_gru'),
-                # os.path.join(
-                #    model_folder, 'mu_context_atrous'),
-                # os.path.join(
-                #    model_folder, 'mu_context_l1'),
-                # os.path.join(
-                #    model_folder, 'mu_context_time'),
-                # os.path.join(
-                #    model_folder, 'mu_context_mult'),
-                # os.path.join(
-                #     model_folder, 'alexnet_conv'),
-                # os.path.join(
-                #     model_folder, 'mu_conv'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_t2'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_2'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_3'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_2_pool'),
-                # os.path.join(
-                #     model_folder, 'mu_conv_3_pool'),
-            ],
-            # 'dataset': ['contours_gilbert_256_tight_control']
-            'dataset': ['contours_gilbert_256_bounded']
-        }
-        exp = self.add_globals(exp)  # Add globals to the experiment'
-        exp['data_augmentations'] = [['grayscale', 'left_right', 'up_down', 'uint8_rescale']]
-            # 'grayscale',
-            # 'left_right',
-            # 'up_down']]  # , 'rotate']]
-        exp['val_augmentations'] = exp['data_augmentations']
-            # 'grayscale',
-            # 'left_right',
-            # 'up_down']]  # , 'rotate']]
+        exp['data_augmentations'] = [['resize']]
+        exp['epochs'] = 500
+        exp['validation_iters'] = 200  # Check validation every N steps of training
+        exp['num_validation_evals'] = 225  # Corresponds to a full movie
         exp['batch_size'] = 10  # Train/val batch size.
-        exp['epochs'] = 50
+        # exp['normalize_labels'] = 'zscore'  # Not currently implemented
         exp['save_weights'] = True
-        exp['validation_iters'] = 500
-        exp['num_validation_evals'] = 100  # 200
-        exp['shuffle_val'] = True
+        exp['dataloader_override'] = True
+        exp['tensorboard_images'] = False
         return exp
+

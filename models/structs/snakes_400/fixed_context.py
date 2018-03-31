@@ -2,13 +2,13 @@
 
 layer_structure = [
     {
-        'layers': ['alexnet_conv'],
-        'alexnet_npy': '/media/data_cifs/vveeraba/misc/contextual_circuit_bp/alexnet_cc.npy',
-        'alexnet_layer': 'conv1_gabors',
-        # 'layers': ['pretrained_conv'],
+        # 'layers': ['alexnet_conv'],
+        # 'alexnet_npy': '/media/data_cifs/vveeraba/misc/contextual_circuit_bp/alexnet_cc.npy',
+        # 'alexnet_layer': 'conv1_gabors',
+        'layers': ['pretrained_conv'],
         # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/cc_Gaussian_Derivatives_2d_12.npy',
-        # 'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
-        # 'alexnet_layer': 's1',
+        'alexnet_npy': '/media/data_cifs/clicktionary/pretrained_weights/gabors_for_contours_7.npy',
+        'alexnet_layer': 's1',
         'trainable': True,
         'init_bias': True,
         # 'layers': ['conv'],
@@ -18,20 +18,18 @@ layer_structure = [
         'stride': [1, 1, 1, 1],
         'activation': ['relu'],
         'activation_target': ['post'],
-        'normalization': ['batch'],
-        'normalization_target': ['post'],
     },
     {
         'layers': ['pool'],
-        'filter_size': [6],
-        'stride': [1, 3, 3, 1],
+        'filter_size': [7],
+        'stride': [1, 1, 1, 1],
         'names': ['context1'],
         'hardcoded_erfs': {
-            'SRF': 2,  # or 6
-            'CRF_excitation': 2,
-            'CRF_inhibition': 2,
-            'SSN': 10,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
-            'SSF': 10,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
+            'SRF': 1,  # or 6
+            'CRF_excitation': 1,
+            'CRF_inhibition': 1,
+            'SSN': 7,  # [5, 5, 5],  # or 17  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11],
+            'SSF': 7,  # [5, 5, 5],  # [15, 15, 15],  # [5, 5, 5],  # [11, 11, 11]  # 30
             # 'SSN': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [5, 5, 5, 5, 5],  # Vanilla VGG-style
             # 'SSF': [8, 8, 8, 3]
@@ -42,11 +40,11 @@ layer_structure = [
         'normalization_target': ['post'],
         'normalization_aux': {
             'timesteps': 5,
-            'rectify_weights': False,  # False,
+            'rectify_weights': True,  # False,
             'pre_batchnorm': False,
             'gate_filter': 1,
             'xi': True,
-            'post_batchnorm': True,
+            'post_batchnorm': False,
             'dense_connections': False,
             'symmetric_weights': True,  # Lateral weight sharing
             'symmetric_gate_weights': False,
@@ -74,17 +72,15 @@ layer_structure = [
         'names': ['conv2'],
         'filter_size': [1],
         'stride': [1, 1, 1, 1],
-        # 'activation': ['relu'],
-        # 'activation_target': ['post'],
-        'normalization': ['batch'],
-        'normalization_target': ['post'],
+        # 'normalization': ['batch'],
+        # 'normalization_target': ['post'],
     },
     {
-        'layers': ['global_pool'],  # avg pool on left, max pool on right
+        'layers': ['global_max_pool'],  # avg pool on left, max pool on right
         'weights': [None],
         'names': ['pool2'],
-        # 'activation': ['softmax'],
-        # 'activation_target': ['post']
+    #     # 'activation': ['relu'],
+    #     # 'activation_target': ['post']
     }
 ]
 
